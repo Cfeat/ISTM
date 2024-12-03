@@ -1,0 +1,37 @@
+// 覆盖Element Plus的默认样式
+.el-menu {
+  border-right: none !important;
+}
+
+.el-menu-item {
+  &.is-active {
+    background-color: #263445 !important;
+  }
+  
+  &:hover {
+    background-color: #263445 !important;
+  }
+}
+
+// 使用 CSS 变量方式重写按钮样式
+.el-button--primary {
+  --el-button-bg-color: var(--primary-color);
+  --el-button-border-color: var(--primary-color);
+  --el-button-hover-bg-color: var(--primary-light-color);
+  --el-button-hover-border-color: var(--primary-light-color);
+}
+
+.el-input {
+  --el-input-border-color: #dcdfe6;
+  --el-input-hover-border-color: #c0c4cc;
+  --el-input-focus-border-color: var(--primary-color);
+}
+
+:root {
+  --primary-color: #409EFF;
+  --primary-light-color: #66b1ff;
+  --success-color: #67C23A;
+  --warning-color: #E6A23C;
+  --danger-color: #F56C6C;
+  --info-color: #909399;
+}

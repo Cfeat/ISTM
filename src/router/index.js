@@ -1,5 +1,4 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import Layout from '@/layout'
 
 export const constantRoutes = [
   {
@@ -9,7 +8,7 @@ export const constantRoutes = [
   },
   {
     path: '/',
-    component: Layout,
+    component: () => import('@/layout/index.vue'),
     redirect: '/dashboard',
     children: [
       {
@@ -17,6 +16,18 @@ export const constantRoutes = [
         component: () => import('@/views/dashboard/index.vue'),
         name: 'Dashboard',
         meta: { title: '首页', icon: 'dashboard' }
+      },
+      {
+        path: 'teaching',
+        component: () => import('@/views/teaching/index.vue'),
+        name: 'Teaching',
+        meta: { title: '教学管理', icon: 'document' }
+      },
+      {
+        path: 'students',
+        component: () => import('@/views/students/index.vue'),
+        name: 'Students',
+        meta: { title: '学生管理', icon: 'user' }
       }
     ]
   }
