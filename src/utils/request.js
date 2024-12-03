@@ -29,6 +29,54 @@ const mockData = {
       code: 200,
       data: null
     }
+  },
+  '/teaching/list': {
+    success: {
+      code: 200,
+      data: [
+        {
+          id: 1,
+          title: '基础体能训练',
+          type: '普通',
+          tags: ['普通', '小班'],
+          duration: '20',
+          score: '31.89'
+        },
+        {
+          id: 2,
+          title: '足球精英课程',
+          type: '足球',
+          tags: ['足球', '小班'],
+          duration: '30',
+          score: '31.10'
+        },
+        {
+          id: 3,
+          title: '武术与自卫',
+          type: '武术',
+          tags: ['武术', '大班'],
+          duration: '22',
+          score: '41.77'
+        },
+        {
+          id: 4,
+          title: '健康与营养学',
+          type: '营养',
+          tags: ['营养', '小班', '室内'],
+          duration: '35',
+          score: '31.89'
+        },
+        {
+          id: 5,
+          title: '体能与康复训练',
+          type: '康复',
+          tags: ['康复', '小班', '室内'],
+          duration: '40',
+          score: '22.25'
+        }
+      ],
+      message: '获取教案列表成功'
+    }
   }
 }
 

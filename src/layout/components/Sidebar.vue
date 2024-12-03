@@ -13,23 +13,25 @@
       :unique-opened="true"
       :collapse-transition="false"
       mode="vertical"
+      router
     >
-      <el-menu-item index="dashboard">
+      <el-menu-item index="/dashboard">
         <el-icon><HomeFilled /></el-icon>
         <template #title>首页</template>
       </el-menu-item>
       
-      <el-menu-item index="teaching">
-        <el-icon><Document /></el-icon>
-        <template #title>教学管理</template>
-      </el-menu-item>
+      <el-sub-menu index="/teaching">
+        <template #title>
+          <el-icon><Document /></el-icon>
+          <span>教学管理</span>
+        </template>
+        <el-menu-item index="/teaching/management">教案管理</el-menu-item>
+      </el-sub-menu>
       
-      <el-menu-item index="students">
+      <el-menu-item index="/students">
         <el-icon><User /></el-icon>
         <template #title>学生管理</template>
       </el-menu-item>
-      
-      <!-- 根据需要添加更多菜单项 -->
     </el-menu>
   </div>
 </template>
@@ -37,8 +39,10 @@
 <script setup>
 import { ref } from 'vue'
 import { HomeFilled, Document, User } from '@element-plus/icons-vue'
+import { useRoute } from 'vue-router'
 
-const activeMenu = ref('dashboard')
+const route = useRoute()
+const activeMenu = ref(route.path)
 </script>
 
 <style lang="scss" scoped>

@@ -18,10 +18,19 @@ export const constantRoutes = [
         meta: { title: '首页', icon: 'dashboard' }
       },
       {
-        path: 'teaching',
+        path: '/teaching',
         component: () => import('@/views/teaching/index.vue'),
         name: 'Teaching',
-        meta: { title: '教学管理', icon: 'document' }
+        meta: { title: '教学管理', icon: 'document' },
+        redirect: '/teaching/management',
+        children: [
+          {
+            path: 'management',
+            component: () => import('@/views/teaching/management.vue'),
+            name: 'TeachingManagement',
+            meta: { title: '教案管理' }
+          }
+        ]
       },
       {
         path: 'students',
