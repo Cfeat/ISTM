@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { login, logout, getInfo } from '@/api/login'
 import { getToken, setToken, removeToken } from '@/utils/auth'
+import router from '@/router'
 
 export const useUserStore = defineStore('user', {
   state: () => ({
@@ -44,7 +45,9 @@ export const useUserStore = defineStore('user', {
         this.name = ''
         this.avatar = ''
         removeToken()
+        router.push('/login')
       } catch (error) {
+        console.error('Logout error:', error)
         throw error
       }
     }

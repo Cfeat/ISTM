@@ -23,6 +23,12 @@ const mockData = {
       },
       message: '获取用户信息成功'
     }
+  },
+  '/logout': {
+    success: {
+      code: 200,
+      data: null
+    }
   }
 }
 
