@@ -29,11 +29,24 @@
             <el-card 
               class="teaching-card" 
               shadow="hover"
-              @click="handleViewEdit(item)"
             >
               <div class="card-header">
                 <span class="title">{{ item.title }}</span>
-                <div class="duration">{{ item.duration }}分钟</div>
+                <div class="operations">
+                  <span class="duration">{{ item.duration }}分钟</span>
+                  <el-dropdown trigger="hover" @command="handleCommand($event, item)">
+                    <el-icon class="more-icon"><MoreFilled /></el-icon>
+                    <template #dropdown>
+                      <el-dropdown-menu>
+                        <el-dropdown-item command="view">查看</el-dropdown-item>
+                        <el-dropdown-item command="edit">编辑</el-dropdown-item>
+                        <el-dropdown-item command="delete" divided>
+                          <span style="color: #f56c6c">删除</span>
+                        </el-dropdown-item>
+                      </el-dropdown-menu>
+                    </template>
+                  </el-dropdown>
+                </div>
               </div>
               <div class="card-tags">
                 <el-tag
@@ -128,13 +141,29 @@
           <el-button v-if="isEditing" type="success" @click="handleSave">保存</el-button>
         </template>
       </el-dialog>
+
+      <!-- 添加删除确认对话框 -->
+      <el-dialog
+        v-model="deleteDialogVisible"
+        title="删除确认"
+        width="30%"
+        center
+      >
+        <span>确定要删除该教案吗？此操作不可恢复。</span>
+        <template #footer>
+          <span class="dialog-footer">
+            <el-button @click="deleteDialogVisible = false">取消</el-button>
+            <el-button type="danger" @click="confirmDelete">确定</el-button>
+          </span>
+        </template>
+      </el-dialog>
     </div>
   </template>
   
   <script setup>
   import { ref, computed } from 'vue'
-  import { Search, Plus } from '@element-plus/icons-vue'
-  import { ElMessage } from 'element-plus'
+  import { Search, Plus, MoreFilled } from '@element-plus/icons-vue'
+  import { ElMessage, ElMessageBox } from 'element-plus'
   
   const searchQuery = ref('')
   const dialogVisible = ref(false)
@@ -286,6 +315,47 @@
     }
     return types[tag] || ''
   }
+  
+  // 添加删除相关的状态
+  const deleteDialogVisible = ref(false)
+  const currentDeleteId = ref(null)
+  
+  // 处理下拉菜单命令
+  const handleCommand = (command, item) => {
+    switch (command) {
+      case 'view':
+        handleViewEdit(item)
+        break
+      case 'edit':
+        handleViewEdit(item)
+        startEditing()
+        break
+      case 'delete':
+        currentDeleteId.value = item.id
+        deleteDialogVisible.value = true
+        break
+    }
+  }
+  
+  // 确认删除
+  const confirmDelete = async () => {
+    try {
+      // 这里可以添加调用删除API的逻辑
+      // await deleteTeaching(currentDeleteId.value)
+      
+      // 临时使用本地删除逻辑
+      const index = teachingList.value.findIndex(item => item.id === currentDeleteId.value)
+      if (index > -1) {
+        teachingList.value.splice(index, 1)
+      }
+      
+      ElMessage.success('删除成功')
+      deleteDialogVisible.value = false
+      currentDeleteId.value = null
+    } catch (error) {
+      ElMessage.error('删除失败：' + error.message)
+    }
+  }
   </script>
   
   <style lang="scss" scoped>
@@ -318,8 +388,21 @@
             font-size: 16px;
           }
   
-          .duration {
-            color: #909399;
+          .operations {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+  
+            .more-icon {
+              cursor: pointer;
+              padding: 4px;
+              border-radius: 4px;
+              transition: all 0.3s;
+  
+              &:hover {
+                background-color: #f5f7fa;
+              }
+            }
           }
         }
   
@@ -341,5 +424,11 @@
     :deep(.el-textarea__inner) {
       color: #333;
     }
+  }
+  
+  .dialog-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
   }
   </style> 

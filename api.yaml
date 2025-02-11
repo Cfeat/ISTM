@@ -1,0 +1,290 @@
+openapi: 3.1.0
+info:
+  title: ISTM-API
+  version: 1.0.0
+  
+servers:
+  - url: https://api.istm.com/v1
+
+paths:
+  /users:
+    post:
+      summary: 创建新用户
+      tags:
+        - 用户管理
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                password:
+                  type: string
+                  format: password
+                email:
+                  type: string
+                  format: email
+      responses:
+        '201':
+          description: 用户创建成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '400':
+          description: 无效的请求参数
+  
+  /users/login:
+    post:
+      summary: 用户登录
+      tags:
+        - 用户管理
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                password:
+                  type: string
+                  format: password
+      responses:
+        '200':
+          description: 登录成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+                  user:
+                    $ref: '#/components/schemas/User'
+  
+  /lesson-plans:
+    get:
+      summary: 获取教案列表
+      tags:
+        - 教案管理
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 1
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 10
+      responses:
+        '200':
+          description: 成功获取教案列表
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/LessonPlan'
+    
+    post:
+      summary: 创建新教案
+      tags:
+        - 教案管理
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title:
+                  type: string
+                content:
+                  type: string
+      responses:
+        '201':
+          description: 教案创建成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LessonPlan'
+
+  /virtual-classrooms:
+    get:
+      summary: 获取虚拟课堂列表
+      tags:
+        - 虚拟课堂
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: 成功获取虚拟课堂列表
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/VirtualClassroom'
+    
+    post:
+      summary: 创建虚拟课堂
+      tags:
+        - 虚拟课堂
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                plan_id:
+                  type: integer
+                classroom_name:
+                  type: string
+                duration:
+                  type: string
+                  format: time
+      responses:
+        '201':
+          description: 虚拟课堂创建成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VirtualClassroom'
+
+  /error-cases:
+    post:
+      summary: 添加错误案例
+      tags:
+        - 错误案例
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                plan_id:
+                  type: integer
+                description:
+                  type: string
+                correction:
+                  type: string
+      responses:
+        '201':
+          description: 错误案例添加成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorCase'
+
+  /lesson-plans/{plan_id}/error-cases:
+    get:
+      summary: 获取特定教案的错误案例
+      tags:
+        - 错误案例
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: plan_id
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: 成功获取错误案例列表
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ErrorCase'
+
+components:
+  schemas:
+    User:
+      type: object
+      properties:
+        user_id:
+          type: integer
+          format: int64
+        username:
+          type: string
+        email:
+          type: string
+          format: email
+        created_at:
+          type: string
+          format: date-time
+      required:
+        - username
+    
+    LessonPlan:
+      type: object
+      properties:
+        plan_id:
+          type: integer
+        title:
+          type: string
+        content:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+      required:
+        - title
+    
+    VirtualClassroom:
+      type: object
+      properties:
+        classroom_id:
+          type: integer
+        plan_id:
+          type: integer
+        user_id:
+          type: integer
+        classroom_name:
+          type: string
+        student_count:
+          type: integer
+          default: 0
+        duration:
+          type: string
+          format: time
+        created_at:
+          type: string
+          format: date-time
+    
+    ErrorCase:
+      type: object
+      properties:
+        case_id:
+          type: integer
+        plan_id:
+          type: integer
+        description:
+          type: string
+        correction:
+          type: string
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT

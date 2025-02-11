@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { login, logout, getInfo } from '@/api/login'
 import { getToken, setToken, removeToken } from '@/utils/auth'
-import router from '@/router'
+import { ElMessage } from 'element-plus'
 
 export const useUserStore = defineStore('user', {
   state: () => ({
@@ -15,10 +15,24 @@ export const useUserStore = defineStore('user', {
     // 登录
     async login(userInfo) {
       try {
-        const data = await login(userInfo)
-        this.token = data.token
-        setToken(data.token)
+        const { username, password, code, uuid } = userInfo
+        const res = await login({ 
+          username: username.trim(), 
+          password, 
+          code, 
+          uuid 
+        })
+        
+        if (res.code === 200) {
+          const { token } = res.data
+          this.token = token
+          setToken(token)
+          return res
+        } else {
+          throw new Error(res.msg || '登录失败')
+        }
       } catch (error) {
+        console.error('Login failed:', error)
         throw error
       }
     },
@@ -26,17 +40,23 @@ export const useUserStore = defineStore('user', {
     // 获取用户信息
     async getInfo() {
       try {
-        const data = await getInfo()
-        this.name = data.name
-        this.avatar = data.avatar
-        this.roles = data.roles
-        return data
+        const res = await getInfo()
+        if (res.code === 200) {
+          const { user } = res.data
+          this.name = user.nickname
+          this.avatar = user.avatar
+          this.roles = user.roles
+          return res.data
+        } else {
+          throw new Error(res.msg || '获取用户信息失败')
+        }
       } catch (error) {
+        console.error('Get user info failed:', error)
         throw error
       }
     },
 
-    // 退出登录
+    // 退出系统
     async logout() {
       try {
         await logout()
@@ -45,11 +65,20 @@ export const useUserStore = defineStore('user', {
         this.name = ''
         this.avatar = ''
         removeToken()
-        router.push('/login')
+        ElMessage.success('退出成功')
       } catch (error) {
-        console.error('Logout error:', error)
+        console.error('Logout failed:', error)
         throw error
       }
+    },
+
+    // 重置 token
+    resetToken() {
+      this.token = ''
+      this.roles = []
+      this.name = ''
+      this.avatar = ''
+      removeToken()
     }
   }
 })

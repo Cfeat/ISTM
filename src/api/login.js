@@ -1,29 +1,35 @@
 import request from '@/utils/request'
 
 // 登录方法
-export function login(userInfo) {
+export function login(data) {
   return request({
-    url: '/login',
+    url: '/auth/login',
     method: 'post',
-    data: userInfo,
-    mock: true
+    data
+  })
+}
+
+// 获取验证码
+export function getCodeImg() {
+  return request({
+    url: '/auth/captcha',
+    method: 'get',
+    timeout: 20000
   })
 }
 
 // 获取用户信息
 export function getInfo() {
   return request({
-    url: '/getInfo',
-    method: 'get',
-    mock: true
+    url: '/users/info',
+    method: 'get'
   })
 }
 
 // 退出方法
 export function logout() {
   return request({
-    url: '/logout',
-    method: 'post',
-    mock: true
+    url: '/auth/logout',
+    method: 'post'
   })
 }

@@ -82,7 +82,7 @@ const mockData = {
 
 // 创建axios实例
 const service = axios.create({
-  baseURL: import.meta.env.VITE_APP_BASE_API || '',
+  baseURL: '/api',
   timeout: 10000
 })
 
@@ -109,47 +109,38 @@ const mockAdapter = (config) => {
 // 请求拦截器
 service.interceptors.request.use(
   config => {
-    // 确保基本配置存在
-    config.headers = config.headers || {}
-    
-    // 确保 method 存在且为字符串
-    if (!config.method) {
-      config.method = 'get'
-    } else {
-      config.method = config.method.toLowerCase()
-    }
-    
-    // 如果是模拟请求，使用模拟适配器
-    if (config.mock) {
-      config.adapter = mockAdapter
-    }
-    
-    // 添加 token
     const token = getToken()
     if (token) {
-      config.headers['Authorization'] = `Bearer ${token}`
+      config.headers['Authorization'] = 'Bearer ' + token
     }
-    
     return config
   },
-  error => Promise.reject(error)
+  error => {
+    console.error('Request Error:', error)
+    return Promise.reject(error)
+  }
 )
 
 // 响应拦截器
 service.interceptors.response.use(
   response => {
-    const { code, data, message } = response.data
+    const res = response.data
     
-    if (code === 200) {
-      message && ElMessage.success(message)
-      return data
+    // 验证码接口特殊处理
+    if (response.config.url.includes('/auth/captcha')) {
+      return res
     }
     
-    ElMessage.error(message || '错误')
-    return Promise.reject(new Error(message || '错误'))
+    // 直接返回数据，让业务层处理具体的状态码
+    return res
   },
   error => {
-    ElMessage.error(error.message || '请求失败')
+    console.error('Response Error:', error.response || error)
+    ElMessage({
+      message: error.message || '系统错误',
+      type: 'error',
+      duration: 5 * 1000
+    })
     return Promise.reject(error)
   }
 )

@@ -1,39 +1,44 @@
 import request from '@/utils/request'
 
 // 获取教案列表
-export function getTeachingList() {
+export function getTeachingList(params) {
   return request({
-    url: '/teaching/list',
+    url: '/api/lesson-plans',
     method: 'get',
-    mock: true
+    params
   })
 }
 
 // 删除教案
 export function deleteTeaching(id) {
   return request({
-    url: `/teaching/${id}`,
-    method: 'delete',
-    mock: true
+    url: `/api/lesson-plans/${id}`,
+    method: 'delete'
   })
 }
 
 // 编辑教案
 export function updateTeaching(data) {
   return request({
-    url: '/teaching/update',
+    url: `/api/lesson-plans/${data.plan_id}`,
     method: 'put',
-    data,
-    mock: true
+    data
   })
 }
 
 // 新增教案
 export function addTeaching(data) {
   return request({
-    url: '/teaching/add',
+    url: '/api/lesson-plans',
     method: 'post',
-    data,
-    mock: true
+    data
   })
-} 
+}
+
+// // 获取教案相关的错误案例
+// export function getTeachingErrors(planId) {
+//   return request({
+//     url: `/api/lesson-plans/${planId}/error-cases`,
+//     method: 'get'
+//   })
+// } 

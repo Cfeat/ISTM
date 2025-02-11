@@ -1,0 +1,1 @@
+import{K as r}from"./index-9f45e407.js";function t(e){return r({url:"/api/classroom/create",method:"post",data:e})}function s(){return r({url:"/api/classroom/types",method:"get"})}function a(e){return r({url:"/api/classroom/detail",method:"get",params:{id:e}})}export{a,t as c,s as g};

@@ -1,3 +1,5 @@
+@use 'sass:color';
+
 // 主题色
 $primary-color: #409EFF;
 $success-color: #67C23A;
@@ -5,8 +7,20 @@ $warning-color: #E6A23C;
 $danger-color: #F56C6C;
 $info-color: #909399;
 
+// 登录页特定颜色
+$primary-green: #78BF03;
+
+// 颜色函数
+@function lighten-color($color, $amount) {
+  @return color.adjust($color, $lightness: $amount);
+}
+
+@function darken-color($color, $amount) {
+  @return color.adjust($color, $lightness: -$amount);
+}
+
 // 布局
-$header-height: 60px;
+$header-height: 75px;
 $sidebar-width: 200px;
 $sidebar-collapsed-width: 64px;
 
@@ -17,10 +31,17 @@ $sidebar-active-text: $primary-color;
 $sidebar-hover-bg: #263445;
 
 // 导航栏
+$navbar-height: 75px;
 $navbar-bg: #ffffff;
 $navbar-border: #dcdfe6;
+$navbar-title-color: #333;
+$navbar-subtitle-color: #666;
+$navbar-logo-size: 40px;
 
 // 字体
 $font-size-base: 14px;
 $font-size-small: 13px;
 $font-size-large: 16px;
+$font-family-base: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+$font-family-special: 'Bauhaus 93', 'Georgia Normal', 'Georgia';
+$font-family-chinese: '黑体';

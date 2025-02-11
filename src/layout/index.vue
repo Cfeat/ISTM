@@ -1,49 +1,48 @@
 <template>
   <div class="app-wrapper">
-    <el-container>
-      <el-aside width="200px">
-        <sidebar />
-      </el-aside>
-      
-      <el-container>
-        <el-header height="60px">
-          <navbar />
-        </el-header>
-        
-        <el-main>
-          <app-main />
-        </el-main>
-      </el-container>
-    </el-container>
+    <Sidebar class="sidebar-container" />
+    <div class="main-container">
+      <Navbar />
+      <div class="app-main">
+        <router-view></router-view>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup>
 import Navbar from './components/Navbar.vue'
 import Sidebar from './components/Sidebar.vue'
-import AppMain from './components/AppMain.vue'
 </script>
 
 <style lang="scss" scoped>
 .app-wrapper {
+  position: relative;
   height: 100vh;
-  
-  .el-aside {
-    background-color: #304156;
-    height: 100vh;
-    overflow-x: hidden;
-    overflow-y: auto;
+  width: 100%;
+
+  .sidebar-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 210px;
+    height: 100%;
+    z-index: 999;
   }
 
-  .el-header {
-    background-color: #fff;
-    border-bottom: 1px solid #dcdfe6;
-    padding: 0;
-  }
-
-  .el-main {
-    background-color: #f0f2f5;
-    padding: 20px;
+  .main-container {
+    min-height: 100%;
+    margin-left: 210px;
+    position: relative;
+    
+    .app-main {
+      padding-top: 75px; // 为固定定位的导航栏留出空间
+      min-height: calc(100vh - 75px);
+      width: 100%;
+      position: relative;
+      overflow: hidden;
+      background-color: #f0f2f5;
+    }
   }
 }
 </style>
