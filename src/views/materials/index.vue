@@ -18,9 +18,9 @@
         <span class="label">适用年级：</span>
         <el-radio-group v-model="filter.grade">
           <el-radio-button label="all">全部</el-radio-button>
-          <el-radio-button label="primary">小学</el-radio-button>
-          <el-radio-button label="junior">初中</el-radio-button>
-          <el-radio-button label="senior">高中</el-radio-button>
+          <el-radio-button label="primary">大一</el-radio-button>
+          <el-radio-button label="junior">大二</el-radio-button>
+          <el-radio-button label="senior">大三</el-radio-button>
         </el-radio-group>
       </div>
     </el-card>
