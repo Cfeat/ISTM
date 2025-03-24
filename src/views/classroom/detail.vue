@@ -11,7 +11,7 @@
         <h3>基本信息</h3>
         <el-descriptions :column="2" border>
           <el-descriptions-item label="课程名称">{{ detail.courseName }}</el-descriptions-item>
-          <el-descriptions-item label="课程类型">{{ detail.courseType }}</el-descriptions-item>
+          <el-descriptions-item label="课程类型">{{ getCourseTypeLabel(detail.courseType) }}</el-descriptions-item>
           <el-descriptions-item label="学生数量">{{ detail.studentCount }}人</el-descriptions-item>
           <el-descriptions-item label="教学时长">{{ detail.duration }}分钟</el-descriptions-item>
         </el-descriptions>
@@ -55,12 +55,24 @@
 import { ref, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { getClassroomDetail } from '@/api/classroom'
+import { getClassroomDetail, deleteClassroom, startClassroom } from '@/api/classroom'
 
 const router = useRouter()
 const route = useRoute()
 const loading = ref(false)
 const detail = ref({})
+
+const courseTypeMap = {
+  basketball: '篮球课程',
+  football: '足球课程',
+  volleyball: '排球课程',
+  athletics: '田径课程',
+  gymnastics: '体操课程'
+}
+
+const getCourseTypeLabel = (type) => {
+  return courseTypeMap[type] || type
+}
 
 // 获取课堂详情
 const fetchDetail = async () => {
@@ -81,9 +93,18 @@ const goBack = () => {
 }
 
 // 开始上课
-const startClass = () => {
-  // TODO: 实现开始上课逻辑
-  ElMessage.success('课堂开始')
+const startClass = async () => {
+  try {
+    const res = await startClassroom(route.params.id)
+    if (res.code === 200) {
+      ElMessage.success('课堂开始')
+      router.push(`/classroom/room/${route.params.id}`)
+    } else {
+      throw new Error(res.message)
+    }
+  } catch (error) {
+    ElMessage.error(error.message || '开始上课失败')
+  }
 }
 
 // 编辑课堂
@@ -94,10 +115,12 @@ const editClass = () => {
 // 删除课堂
 const deleteClass = async () => {
   try {
-    await ElMessageBox.confirm('确定要删除该课堂吗？', '提示', {
+    await ElMessageBox.confirm('确定要删除该课堂吗？删除后将无法恢复', '警告', {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
       type: 'warning'
     })
-    // TODO: 调用删除API
+    await deleteClassroom(route.params.id)
     ElMessage.success('删除成功')
     router.push('/classroom/list')
   } catch (error) {

@@ -38,7 +38,11 @@
     <el-card class="list-content">
       <el-table :data="classroomList" v-loading="loading" border>
         <el-table-column prop="courseName" label="课程名称" min-width="150" />
-        <el-table-column prop="courseType" label="课程类型" width="120" />
+        <el-table-column label="课程类型" width="120">
+          <template #default="{ row }">
+            {{ getCourseTypeLabel(row.courseType) }}
+          </template>
+        </el-table-column>
         <el-table-column prop="studentCount" label="学生数量" width="100">
           <template #default="{ row }">
             {{ row.studentCount }}人
@@ -50,19 +54,12 @@
           </template>
         </el-table-column>
         <el-table-column prop="createTime" label="创建时间" width="180" />
-        <el-table-column prop="status" label="状态" width="100">
-          <template #default="{ row }">
-            <el-tag :type="row.status === 'active' ? 'success' : 'info'">
-              {{ row.status === 'active' ? '已发布' : '草稿' }}
-            </el-tag>
-          </template>
-        </el-table-column>
         <el-table-column label="操作" width="250" fixed="right">
           <template #default="{ row }">
             <el-button link type="primary" @click="viewClassroom(row)">查看</el-button>
-            <el-button link type="primary" @click="startClassroom(row)">开始上课</el-button>
+            <el-button link type="primary" @click="startClass(row)">开始上课</el-button>
             <el-button link type="primary" @click="editClassroom(row)">编辑</el-button>
-            <el-button link type="danger" @click="deleteClassroom(row)">删除</el-button>
+            <el-button link type="danger" @click="deleteClass(row)">删除</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -88,7 +85,7 @@ import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { Plus } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { getCourseTypes } from '@/api/classroom'
+import { getCourseTypes, getClassroomList, deleteClassroom, startClassroom } from '@/api/classroom'
 
 const router = useRouter()
 const loading = ref(false)
@@ -102,6 +99,26 @@ const searchForm = reactive({
   name: '',
   type: ''
 })
+
+const courseTypeMap = {
+  basketball: '篮球课程',
+  football: '足球课程',
+  volleyball: '排球课程',
+  athletics: '田径课程',
+  gymnastics: '体操课程'
+}
+
+const getCourseTypeLabel = (type) => {
+  return courseTypeMap[type] || type
+}
+
+const courseTypesOptions = [
+  { value: 'basketball', label: '篮球课程' },
+  { value: 'football', label: '足球课程' },
+  { value: 'volleyball', label: '排球课程' },
+  { value: 'athletics', label: '田径课程' },
+  { value: 'gymnastics', label: '体操课程' }
+]
 
 // 获取课程类型
 const fetchCourseTypes = async () => {
@@ -117,18 +134,14 @@ const fetchCourseTypes = async () => {
 const fetchClassroomList = async () => {
   try {
     loading.value = true
-    // TODO: 调用获取列表API
-    // 模拟数据
-    classroomList.value = Array(10).fill(null).map((_, index) => ({
-      id: index + 1,
-      courseName: `示例课程${index + 1}`,
-      courseType: '篮球',
-      studentCount: 30,
-      duration: 45,
-      createTime: '2024-02-20 10:00:00',
-      status: index % 2 === 0 ? 'active' : 'draft'
-    }))
-    total.value = 100
+    const res = await getClassroomList({
+      page: currentPage.value,
+      pageSize: pageSize.value,
+      name: searchForm.name,
+      type: searchForm.type
+    })
+    classroomList.value = res.data.list
+    total.value = res.data.total
   } catch (error) {
     ElMessage.error('获取课堂列表失败')
   } finally {
@@ -171,30 +184,41 @@ const viewClassroom = (row) => {
   router.push(`/classroom/detail/${row.id}`)
 }
 
-// 开始上课
-const startClassroom = (row) => {
-  // TODO: 实现开始上课逻辑
-  ElMessage.success('课堂开始')
-}
-
 // 编辑课堂
 const editClassroom = (row) => {
   router.push(`/classroom/edit/${row.id}`)
 }
 
 // 删除课堂
-const deleteClassroom = async (row) => {
+const deleteClass = async (row) => {
   try {
-    await ElMessageBox.confirm('确定要删除该课堂吗？', '提示', {
+    await ElMessageBox.confirm('确定要删除该课堂吗？删除后将无法恢复', '警告', {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
       type: 'warning'
     })
-    // TODO: 调用删除API
+    await deleteClassroom(row.id)
     ElMessage.success('删除成功')
-    fetchClassroomList()
+    fetchClassroomList() // 重新获取列表数据
   } catch (error) {
     if (error !== 'cancel') {
       ElMessage.error('删除失败')
     }
+  }
+}
+
+// 开始上课
+const startClass = async (row) => {
+  try {
+    const res = await startClassroom(row.id)
+    if (res.code === 200) {
+      ElMessage.success('课堂开始')
+      router.push(`/classroom/room/${row.id}`)
+    } else {
+      throw new Error(res.message)
+    }
+  } catch (error) {
+    ElMessage.error(error.message || '开始上课失败')
   }
 }
 

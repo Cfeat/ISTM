@@ -114,7 +114,7 @@ const activeMenu = computed(() => {
 const handleSelect = (key) => {
   switch (key) {
     case 'course':
-      router.push('/course/list')
+      router.push('/classroom/list')
       break
     case 'materials':
       router.push('/materials')

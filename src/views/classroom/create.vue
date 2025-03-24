@@ -21,7 +21,18 @@
         </el-form-item>
 
         <el-form-item label="课程类型" prop="courseType">
-          <el-input v-model="formData.courseType" placeholder="请选择课程类型" />
+          <el-select 
+            v-model="formData.courseType" 
+            placeholder="请选择课程类型"
+            @change="handleCourseTypeChange"
+          >
+            <el-option
+              v-for="type in courseTypes"
+              :key="type.value"
+              :label="type.label"
+              :value="type.value"
+            />
+          </el-select>
         </el-form-item>
 
         <el-form-item label="学生数目" prop="studentCount">
@@ -177,16 +188,19 @@ import { createClassroom, uploadTeachingPlan, getCourseTypes } from '@/api/class
 const router = useRouter()
 const formRef = ref(null)
 const submitting = ref(false)
+const courseTypes = ref([])
+
+// 表单数据
 const formData = reactive({
   courseName: '',
   courseType: '',
-  studentCount: '',
-  duration: '',
+  studentCount: 30,
+  duration: 45,
   teachingGoals: '',
   teachingProcess: '',
   genderRatio: 50,
-  errorRate: 50,
-  responseTime: 0.5,
+  errorRate: 30,
+  responseTime: 1,
   weather: 'sunny'
 })
 
@@ -197,18 +211,34 @@ const weatherOptions = [
   { label: '小雪', value: 'snowy', icon: '/src/assets/weather/snowy.png' }
 ]
 
+// 表单验证规则
 const rules = {
-  courseName: [
-    { required: true, message: '请输入课程名称', trigger: 'blur' }
-  ],
-  courseType: [
-    { required: true, message: '请选择课程类型', trigger: 'blur' }
-  ],
-  studentCount: [
-    { required: true, message: '请输入学生数目', trigger: 'blur' },
-    { type: 'number', message: '学生数目必须为数字' },
-    { type: 'number', min: 1, message: '学生数目必须大于0', trigger: 'blur' }
-  ]
+  courseName: [{ required: true, message: '请输入课程名称', trigger: 'blur' }],
+  courseType: [{ required: true, message: '请选择课程类型', trigger: 'change' }],
+  studentCount: [{ required: true, message: '请输入学生数目', trigger: 'blur' }],
+  duration: [{ required: true, message: '请输入教学时长', trigger: 'blur' }],
+  teachingGoals: [{ required: true, message: '请输入教学目标', trigger: 'blur' }],
+  teachingProcess: [{ required: true, message: '请输入教学过程', trigger: 'blur' }]
+}
+
+// 获取课程类型列表
+const fetchCourseTypes = async () => {
+  try {
+    const res = await getCourseTypes()
+    courseTypes.value = res.data
+  } catch (error) {
+    ElMessage.error('获取课程类型失败')
+  }
+}
+
+// 监听课程类型变化，自动填充相关内容
+const handleCourseTypeChange = (type) => {
+  if (type && courseData[type]) {
+    const courseInfo = courseData[type]
+    formData.courseName = courseInfo.name
+    formData.teachingGoals = courseInfo.goals
+    formData.teachingProcess = courseInfo.process
+  }
 }
 
 // 调整性别比例
@@ -243,17 +273,6 @@ const selectWeather = (weather) => {
   formData.weather = weather
 }
 
-// 获取课程类型列表
-const courseTypes = ref([])
-const fetchCourseTypes = async () => {
-  try {
-    const res = await getCourseTypes()
-    courseTypes.value = res.data
-  } catch (error) {
-    ElMessage.error('获取课程类型失败')
-  }
-}
-
 // 处理文件上传
 const handleFileUpload = async (file) => {
   try {
@@ -282,12 +301,9 @@ const handleSubmit = async () => {
     const res = await createClassroom(formData)
     ElMessage.success('创建成功')
     
-    // 跳转到课堂列表页
+    // 跳转到课堂详情页
     router.push({
-      name: 'ClassroomList',
-      query: {
-        id: res.data.id // 可选：带上新创建的课堂ID
-      }
+      path: `/classroom/detail/${res.data.id}`
     })
   } catch (error) {
     ElMessage.error(error.message || '创建失败')
@@ -495,6 +511,10 @@ onMounted(() => {
       border-color: #409eff;
       background-color: #ecf5ff;
     }
+  }
+
+  .el-select {
+    width: 100%;
   }
 }
 </style> 

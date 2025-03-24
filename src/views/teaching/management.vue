@@ -340,10 +340,6 @@
   // 确认删除
   const confirmDelete = async () => {
     try {
-      // 这里可以添加调用删除API的逻辑
-      // await deleteTeaching(currentDeleteId.value)
-      
-      // 临时使用本地删除逻辑
       const index = teachingList.value.findIndex(item => item.id === currentDeleteId.value)
       if (index > -1) {
         teachingList.value.splice(index, 1)

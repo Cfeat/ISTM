@@ -50,10 +50,24 @@ export const constantRoutes = [
         hidden: true
       },
       {
+        path: 'edit/:id',
+        name: 'ClassroomEdit',
+        component: () => import('@/views/classroom/edit.vue'),
+        meta: { title: '编辑课堂' },
+        hidden: true
+      },
+      {
         path: 'detail/:id',
         name: 'ClassroomDetail',
         component: () => import('@/views/classroom/detail.vue'),
         meta: { title: 'AI课堂详情' },
+        hidden: true
+      },
+      {
+        path: 'room/:id',
+        name: 'ClassroomRoom',
+        component: () => import('@/views/classroom/room.vue'),
+        meta: { title: '虚拟课堂' },
         hidden: true
       }
     ]
@@ -95,27 +109,6 @@ export const constantRoutes = [
     ]
   },
   {
-    path: '/course',
-    component: Layout,
-    redirect: '/course/list',
-    meta: { title: '课程管理', icon: 'Education' },
-    children: [
-      {
-        path: 'list',
-        name: 'CourseList',
-        component: () => import('@/views/course/list.vue'),
-        meta: { title: '课程列表' }
-      },
-      {
-        path: 'detail/:id',
-        name: 'CourseDetail',
-        component: () => import('@/views/course/detail.vue'),
-        meta: { title: '课程详情' },
-        hidden: true
-      }
-    ]
-  },
-  {
     path: '/materials',
     component: Layout,
     children: [
@@ -124,84 +117,91 @@ export const constantRoutes = [
         name: 'Materials',
         component: () => import('@/views/materials/index.vue'),
         meta: { title: '精选教案', icon: 'Document' }
+      },
+      {
+        path: 'detail/:id',
+        name: 'MaterialDetail',
+        component: () => import('@/views/materials/detail.vue'),
+        meta: { title: '教案详情' },
+        hidden: true
       }
     ]
   }
 ]
 
-// 动态路由
-export const asyncRoutes = [
-  {
-    path: '/dashboard',
-    component: Layout,
-    redirect: '/dashboard/index',
-    children: [
-      {
-        path: 'index',
-        component: () => import('@/views/dashboard/index.vue'),
-        name: 'Dashboard',
-        meta: { title: '平台资讯', icon: 'dashboard', affix: true }
-      }
-    ]
-  },
-  {
-    path: '/history',
-    component: Layout,
-    redirect: '/history/index',
-    children: [
-      {
-        path: 'index',
-        component: () => import('@/views/history/index.vue'),
-        name: 'History',
-        meta: { title: '历史课堂', icon: 'history' }
-      }
-    ]
-  },
-  {
-    path: '/classroom',
-    component: Layout,
-    redirect: '/classroom/list',
-    meta: { title: 'AI课堂', icon: 'School' },
-    children: [
-      {
-        path: 'list',
-        name: 'ClassroomList',
-        component: () => import('@/views/classroom/list.vue'),
-        meta: { title: 'AI课堂列表' }
-      },
-      {
-        path: 'create',
-        name: 'ClassroomCreate',
-        component: () => import('@/views/classroom/create.vue'),
-        meta: { title: '创建AI课堂' }
-      }
-    ]
-  },
-  {
-    path: '/guide',
-    component: Layout,
-    children: [
-      {
-        path: '',
-        name: 'Guide',
-        component: () => import('@/views/guide/index.vue'),
-        meta: { title: '使用建议', icon: 'Guide' }
-      }
-    ]
-  },
-  {
-    path: '/settings',
-    component: Layout,
-    children: [
-      {
-        path: '',
-        name: 'Settings',
-        component: () => import('@/views/settings/index.vue'),
-        meta: { title: '系统设置', icon: 'Setting' }
-      }
-    ]
-  }
-]
+// // 动态路由
+// export const asyncRoutes = [
+//   {
+//     path: '/dashboard',
+//     component: Layout,
+//     redirect: '/dashboard/index',
+//     children: [
+//       {
+//         path: 'index',
+//         component: () => import('@/views/dashboard/index.vue'),
+//         name: 'Dashboard',
+//         meta: { title: '平台资讯', icon: 'dashboard', affix: true }
+//       }
+//     ]
+//   },
+//   {
+//     path: '/history',
+//     component: Layout,
+//     redirect: '/history/index',
+//     children: [
+//       {
+//         path: 'index',
+//         component: () => import('@/views/history/index.vue'),
+//         name: 'History',
+//         meta: { title: '历史课堂', icon: 'history' }
+//       }
+//     ]
+//   },
+//   {
+//     path: '/classroom',
+//     component: Layout,
+//     redirect: '/classroom/list',
+//     meta: { title: 'AI课堂', icon: 'School' },
+//     children: [
+//       {
+//         path: 'list',
+//         name: 'ClassroomList',
+//         component: () => import('@/views/classroom/list.vue'),
+//         meta: { title: 'AI课堂列表' }
+//       },
+//       {
+//         path: 'create',
+//         name: 'ClassroomCreate',
+//         component: () => import('@/views/classroom/create.vue'),
+//         meta: { title: '创建AI课堂' }
+//       }
+//     ]
+//   },
+//   {
+//     path: '/guide',
+//     component: Layout,
+//     children: [
+//       {
+//         path: '',
+//         name: 'Guide',
+//         component: () => import('@/views/guide/index.vue'),
+//         meta: { title: '使用建议', icon: 'Guide' }
+//       }
+//     ]
+//   },
+//   {
+//     path: '/settings',
+//     component: Layout,
+//     children: [
+//       {
+//         path: '',
+//         name: 'Settings',
+//         component: () => import('@/views/settings/index.vue'),
+//         meta: { title: '系统设置', icon: 'Setting' }
+//       }
+//     ]
+//   }
+// ]
 
 const router = createRouter({
   history: createWebHistory(),
