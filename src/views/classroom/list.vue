@@ -85,7 +85,7 @@ import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { Plus } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { getCourseTypes, getClassroomList, deleteClassroom, startClassroom } from '@/api/classroom'
+import { getCourseTypes, listClassroom, delClassroom, startClassroom } from '@/api/system/classroom'
 
 const router = useRouter()
 const loading = ref(false)
@@ -134,7 +134,7 @@ const fetchCourseTypes = async () => {
 const fetchClassroomList = async () => {
   try {
     loading.value = true
-    const res = await getClassroomList({
+    const res = await listClassroom({
       page: currentPage.value,
       pageSize: pageSize.value,
       name: searchForm.name,
@@ -197,7 +197,7 @@ const deleteClass = async (row) => {
       cancelButtonText: '取消',
       type: 'warning'
     })
-    await deleteClassroom(row.id)
+    await delClassroom(row.id)
     ElMessage.success('删除成功')
     fetchClassroomList() // 重新获取列表数据
   } catch (error) {
