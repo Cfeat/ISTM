@@ -2,115 +2,19 @@ import axios from 'axios'
 import { ElMessage } from 'element-plus'
 import { getToken } from '@/utils/auth'
 
-// 模拟数据
-const mockData = {
-  '/login': {
-    success: {
-      code: 200,
-      data: {
-        token: 'mock-token'
-      },
-      message: '登录成功'
-    }
-  },
-  '/getInfo': {
-    success: {
-      code: 200,
-      data: {
-        name: '测试用户',
-        avatar: '/src/assets/images/user.jpg',
-        roles: ['admin']
-      },
-      message: '获取用户信息成功'
-    }
-  },
-  '/logout': {
-    success: {
-      code: 200,
-      data: null
-    }
-  },
-  '/teaching/list': {
-    success: {
-      code: 200,
-      data: [
-        {
-          id: 1,
-          title: '基础体能训练',
-          type: '普通',
-          tags: ['普通', '小班'],
-          duration: '20',
-          score: '31.89'
-        },
-        {
-          id: 2,
-          title: '足球精英课程',
-          type: '足球',
-          tags: ['足球', '小班'],
-          duration: '30',
-          score: '31.10'
-        },
-        {
-          id: 3,
-          title: '武术与自卫',
-          type: '武术',
-          tags: ['武术', '大班'],
-          duration: '22',
-          score: '41.77'
-        },
-        {
-          id: 4,
-          title: '健康与营养学',
-          type: '营养',
-          tags: ['营养', '小班', '室内'],
-          duration: '35',
-          score: '31.89'
-        },
-        {
-          id: 5,
-          title: '体能与康复训练',
-          type: '康复',
-          tags: ['康复', '小班', '室内'],
-          duration: '40',
-          score: '22.25'
-        }
-      ],
-      message: '获取教案列表成功'
-    }
-  }
-}
-
 // 创建axios实例
 const service = axios.create({
-  baseURL: '/api',
-  timeout: 10000
+  // 使用Vite环境变量
+  baseURL: import.meta.env.VITE_APP_BASE_API || '/api',
+  timeout: Number(import.meta.env.VITE_APP_TIMEOUT || 10000)
 })
-
-// 模拟请求适配器
-const mockAdapter = (config) => {
-  return new Promise((resolve) => {
-    const { url, scenario = 'success' } = config
-    const mockEndpoint = mockData[url]
-    const response = mockEndpoint[scenario]
-    
-    setTimeout(() => {
-      resolve({
-        status: 200,
-        statusText: 'OK',
-        data: response,
-        headers: {},
-        config,
-        request: {}
-      })
-    }, 100)
-  })
-}
 
 // 请求拦截器
 service.interceptors.request.use(
   config => {
     const token = getToken()
     if (token) {
+      // 设置令牌，按照RuoYi后端的要求配置
       config.headers['Authorization'] = 'Bearer ' + token
     }
     return config
@@ -131,8 +35,32 @@ service.interceptors.response.use(
       return res
     }
     
-    // 直接返回数据，让业务层处理具体的状态码
-    return res
+    // 判断后端返回的状态码
+    if (res.code === 200) {
+      return res
+    } else {
+      ElMessage({
+        message: res.msg || '系统错误',
+        type: 'error',
+        duration: 5 * 1000
+      })
+      
+      // 50008: 非法的token; 50012: 其他客户端登录了; 50014: Token过期了;
+      if (res.code === 401 || res.code === 50008 || res.code === 50012 || res.code === 50014) {
+        // 重新登录
+        ElMessage.confirm('您已登出，可以取消继续留在该页面，或者重新登录', '确认登出', {
+          confirmButtonText: '重新登录',
+          cancelButtonText: '取消',
+          type: 'warning'
+        }).then(() => {
+          // 调用登出方法，清除用户信息
+          // store.dispatch('user/resetToken').then(() => {
+          //   location.reload()
+          // })
+        })
+      }
+      return Promise.reject(new Error(res.msg || '系统错误'))
+    }
   },
   error => {
     console.error('Response Error:', error.response || error)

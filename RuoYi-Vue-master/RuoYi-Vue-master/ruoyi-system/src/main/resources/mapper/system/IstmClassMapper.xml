@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.system.mapper.IstmClassMapper">
+    
+    <resultMap type="IstmClass" id="IstmClassResult">
+        <result property="classId"    column="class_id"    />
+        <result property="className"    column="class_name"    />
+        <result property="classType"    column="class_type"    />
+        <result property="classProcess"    column="class_process"    />
+        <result property="classPurpose"    column="class_purpose"    />
+        <result property="planId"    column="plan_id"    />
+        <result property="studentCount"    column="student_count"    />
+        <result property="userId"    column="user_id"    />
+        <result property="duration"    column="duration"    />
+        <result property="note1"    column="note1"    />
+        <result property="note2"    column="note2"    />
+        <result property="note3"    column="note3"    />
+        <result property="createBy"    column="create_by"    />
+        <result property="createTime"    column="create_time"    />
+        <result property="updateBy"    column="update_by"    />
+        <result property="updateTime"    column="update_time"    />
+        <result property="remark"    column="remark"    />
+    </resultMap>
+
+    <sql id="selectIstmClassVo">
+        select class_id, class_name, class_type, class_process, class_purpose, plan_id, student_count, user_id, duration, note1, note2, note3, create_by, create_time, update_by, update_time, remark from istm_class
+    </sql>
+
+    <select id="selectIstmClassList" parameterType="IstmClass" resultMap="IstmClassResult">
+        <include refid="selectIstmClassVo"/>
+        <where>  
+            <if test="className != null  and className != ''"> and class_name like concat('%', #{className}, '%')</if>
+            <if test="classType != null  and classType != ''"> and class_type like concat('%', #{classType}, '%')</if>
+            <if test="classProcess != null  and classProcess != ''"> and class_process like concat('%', #{classProcess}, '%')</if>
+            <if test="classPurpose != null  and classPurpose != ''"> and class_purpose like concat('%', #{classPurpose}, '%')</if>
+            <if test="planId != null "> and plan_id = #{planId}</if>
+            <if test="studentCount != null "> and student_count = #{studentCount}</if>
+            <if test="userId != null "> and user_id = #{userId}</if>
+            <if test="remark != null  and remark != ''"> and remark = #{remark}</if>
+        </where>
+    </select>
+    
+    <select id="selectIstmClassByClassId" parameterType="Long" resultMap="IstmClassResult">
+        <include refid="selectIstmClassVo"/>
+        where class_id = #{classId}
+    </select>
+
+    <insert id="insertIstmClass" parameterType="IstmClass" useGeneratedKeys="true" keyProperty="classId">
+        insert into istm_class
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="className != null and className != ''">class_name,</if>
+            <if test="classType != null">class_type,</if>
+            <if test="classProcess != null">class_process,</if>
+            <if test="classPurpose != null">class_purpose,</if>
+            <if test="planId != null">plan_id,</if>
+            <if test="studentCount != null">student_count,</if>
+            <if test="userId != null">user_id,</if>
+            <if test="duration != null">duration,</if>
+            <if test="note1 != null">note1,</if>
+            <if test="note2 != null">note2,</if>
+            <if test="note3 != null">note3,</if>
+            <if test="createBy != null">create_by,</if>
+            <if test="createTime != null">create_time,</if>
+            <if test="updateBy != null">update_by,</if>
+            <if test="updateTime != null">update_time,</if>
+            <if test="remark != null">remark,</if>
+         </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="className != null and className != ''">#{className},</if>
+            <if test="classType != null">#{classType},</if>
+            <if test="classProcess != null">#{classProcess},</if>
+            <if test="classPurpose != null">#{classPurpose},</if>
+            <if test="planId != null">#{planId},</if>
+            <if test="studentCount != null">#{studentCount},</if>
+            <if test="userId != null">#{userId},</if>
+            <if test="duration != null">#{duration},</if>
+            <if test="note1 != null">#{note1},</if>
+            <if test="note2 != null">#{note2},</if>
+            <if test="note3 != null">#{note3},</if>
+            <if test="createBy != null">#{createBy},</if>
+            <if test="createTime != null">#{createTime},</if>
+            <if test="updateBy != null">#{updateBy},</if>
+            <if test="updateTime != null">#{updateTime},</if>
+            <if test="remark != null">#{remark},</if>
+         </trim>
+    </insert>
+
+    <update id="updateIstmClass" parameterType="IstmClass">
+        update istm_class
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="className != null and className != ''">class_name = #{className},</if>
+            <if test="classType != null">class_type = #{classType},</if>
+            <if test="classProcess != null">class_process = #{classProcess},</if>
+            <if test="classPurpose != null">class_purpose = #{classPurpose},</if>
+            <if test="planId != null">plan_id = #{planId},</if>
+            <if test="studentCount != null">student_count = #{studentCount},</if>
+            <if test="userId != null">user_id = #{userId},</if>
+            <if test="duration != null">duration = #{duration},</if>
+            <if test="note1 != null">note1 = #{note1},</if>
+            <if test="note2 != null">note2 = #{note2},</if>
+            <if test="note3 != null">note3 = #{note3},</if>
+            <if test="createBy != null">create_by = #{createBy},</if>
+            <if test="createTime != null">create_time = #{createTime},</if>
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+            <if test="updateTime != null">update_time = #{updateTime},</if>
+            <if test="remark != null">remark = #{remark},</if>
+        </trim>
+        where class_id = #{classId}
+    </update>
+
+    <delete id="deleteIstmClassByClassId" parameterType="Long">
+        delete from istm_class where class_id = #{classId}
+    </delete>
+
+    <delete id="deleteIstmClassByClassIds" parameterType="String">
+        delete from istm_class where class_id in 
+        <foreach item="classId" collection="array" open="(" separator="," close=")">
+            #{classId}
+        </foreach>
+    </delete>
+</mapper>

@@ -126,6 +126,19 @@ export const constantRoutes = [
         hidden: true
       }
     ]
+  },
+  {
+    path: '/teaching',
+    component: Layout,
+    redirect: '/teaching/plan',
+    children: [
+      {
+        path: 'plan',
+        name: 'TeachingPlan',
+        component: () => import('@/views/teaching/plan.vue'),
+        meta: { title: '教案管理', icon: 'Memo' }
+      }
+    ]
   }
 ]
 
