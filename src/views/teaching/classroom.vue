@@ -59,7 +59,7 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
-import { getClassroomList, createClassroom } from '@/api/classroom'
+import { listClassroom, addClassroom } from '@/api/system/classroom'
 import { ElMessage } from 'element-plus'
 
 const loading = ref(false)
@@ -86,7 +86,7 @@ const rules = {
 const fetchClassroomList = async () => {
   loading.value = true
   try {
-    const data = await getClassroomList()
+    const data = await listClassroom()
     classroomList.value = data
   } catch (error) {
     console.error('获取课堂列表失败:', error)
@@ -113,7 +113,7 @@ const handleSubmit = async () => {
   await formRef.value.validate(async (valid) => {
     if (valid) {
       try {
-        await createClassroom(form.value)
+        await addClassroom(form.value)
         ElMessage.success('创建成功')
         dialogVisible.value = false
         fetchClassroomList()

@@ -16,13 +16,13 @@
       <div class="form-left">
         <h3>创建AI课堂<span class="required-tip">红点为必填项目</span></h3>
         
-        <el-form-item label="课程名称" prop="courseName">
-          <el-input v-model="formData.courseName" placeholder="请输入课程名称" />
+        <el-form-item label="课程名称" prop="className">
+          <el-input v-model="formData.className" placeholder="请输入课程名称" />
         </el-form-item>
 
-        <el-form-item label="课程类型" prop="courseType">
+        <el-form-item label="课程类型" prop="classType">
           <el-select 
-            v-model="formData.courseType" 
+            v-model="formData.classType" 
             placeholder="请选择课程类型"
             @change="handleCourseTypeChange"
           >
@@ -47,18 +47,18 @@
           <el-input v-model="formData.duration" placeholder="请输入教学时长" />
         </el-form-item>
 
-        <el-form-item label="教学目标" prop="teachingGoals">
+        <el-form-item label="教学目标" prop="classDesc">
           <el-input
-            v-model="formData.teachingGoals"
+            v-model="formData.classDesc"
             type="textarea"
             :rows="4"
             placeholder="请输入教学目标"
           />
         </el-form-item>
 
-        <el-form-item label="教学过程" prop="teachingProcess">
+        <el-form-item label="教学过程" prop="planInfo">
           <el-input
-            v-model="formData.teachingProcess"
+            v-model="formData.planInfo"
             type="textarea"
             :rows="6"
             placeholder="请输入教学过程"
@@ -161,9 +161,29 @@
         </div>
 
         <div class="ai-upload">
-          <div class="upload-area">
+          <div 
+            class="upload-area" 
+            :class="{ dragging: isDragging }"
+            @drop="handleDrop"
+            @dragover="handleDragOver"
+            @dragenter="isDragging = true"
+            @dragleave="isDragging = false"
+            @click="triggerFileUpload"
+          >
             <el-icon><Upload /></el-icon>
-            <p>将教案文件拖到此处自动识别</p>
+            <p>将教案文件拖到此处或点击上传</p>
+            <input 
+              type="file" 
+              ref="fileInput" 
+              style="display: none;" 
+              accept=".docx,.pdf,.txt" 
+              @change="handleFileChange"
+            />
+          </div>
+          <div class="upload-tip" v-if="uploadedFileName">
+            <el-icon><Document /></el-icon>
+            <span>{{ uploadedFileName }}</span>
+            <el-icon class="delete-icon" @click="clearUploadedFile"><Delete /></el-icon>
           </div>
         </div>
       </div>
@@ -179,25 +199,34 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
-import { Plus, Minus, Upload } from '@element-plus/icons-vue'
+import { ref, reactive, onMounted, computed } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
+import { Plus, Minus, Upload, Document, Delete } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
-import { createClassroom, uploadTeachingPlan, getCourseTypes } from '@/api/classroom'
+import { addClassroom, uploadTeachingPlan, getCourseTypes } from '@/api/system/classroom'
+import { applyPlanToClass } from '@/api/materials'
 
 const router = useRouter()
+const route = useRoute()
 const formRef = ref(null)
+const fileInput = ref(null)
 const submitting = ref(false)
 const courseTypes = ref([])
+const isDragging = ref(false)
+const uploadedFileName = ref('')
+const uploadedFile = ref(null)
+
+// 获取query参数中的planId
+const planId = computed(() => route.query.planId)
 
 // 表单数据
 const formData = reactive({
-  courseName: '',
-  courseType: '',
+  className: '',
+  classType: '',
   studentCount: 30,
   duration: 45,
-  teachingGoals: '',
-  teachingProcess: '',
+  classDesc: '',
+  planInfo: '',
   genderRatio: 50,
   errorRate: 30,
   responseTime: 1,
@@ -213,20 +242,30 @@ const weatherOptions = [
 
 // 表单验证规则
 const rules = {
-  courseName: [{ required: true, message: '请输入课程名称', trigger: 'blur' }],
-  courseType: [{ required: true, message: '请选择课程类型', trigger: 'change' }],
+  className: [{ required: true, message: '请输入课程名称', trigger: 'blur' }],
+  classType: [{ required: true, message: '请选择课程类型', trigger: 'change' }],
   studentCount: [{ required: true, message: '请输入学生数目', trigger: 'blur' }],
   duration: [{ required: true, message: '请输入教学时长', trigger: 'blur' }],
-  teachingGoals: [{ required: true, message: '请输入教学目标', trigger: 'blur' }],
-  teachingProcess: [{ required: true, message: '请输入教学过程', trigger: 'blur' }]
+  classDesc: [{ required: true, message: '请输入教学目标', trigger: 'blur' }],
+  planInfo: [{ required: true, message: '请输入教学过程', trigger: 'blur' }]
 }
 
 // 获取课程类型列表
 const fetchCourseTypes = async () => {
   try {
     const res = await getCourseTypes()
-    courseTypes.value = res.data
+    console.log('课程类型响应:', res)
+    if (res.code === 200 && res.data) {
+      // 将RuoYi数据字典格式转换为前端需要的格式
+      courseTypes.value = res.data.map(item => ({
+        value: item.dictValue,
+        label: item.dictLabel
+      }))
+    } else {
+      throw new Error(res.msg || '获取数据失败')
+    }
   } catch (error) {
+    console.error('获取课程类型失败:', error)
     ElMessage.error('获取课程类型失败')
   }
 }
@@ -235,9 +274,9 @@ const fetchCourseTypes = async () => {
 const handleCourseTypeChange = (type) => {
   if (type && courseData[type]) {
     const courseInfo = courseData[type]
-    formData.courseName = courseInfo.name
-    formData.teachingGoals = courseInfo.goals
-    formData.teachingProcess = courseInfo.process
+    formData.className = courseInfo.name
+    formData.classDesc = courseInfo.goals
+    formData.planInfo = courseInfo.process
   }
 }
 
@@ -273,21 +312,107 @@ const selectWeather = (weather) => {
   formData.weather = weather
 }
 
+// 触发文件上传
+const triggerFileUpload = () => {
+  fileInput.value.click()
+}
+
+// 处理文件选择
+const handleFileChange = (event) => {
+  const file = event.target.files[0]
+  if (file) {
+    uploadedFileName.value = file.name
+    uploadedFile.value = file
+    handleFileUpload(file)
+  }
+}
+
+// 清除上传的文件
+const clearUploadedFile = () => {
+  uploadedFileName.value = ''
+  uploadedFile.value = null
+  fileInput.value.value = ''
+}
+
 // 处理文件上传
 const handleFileUpload = async (file) => {
   try {
-    const formData = new FormData()
-    formData.append('file', file)
+    const formDataObj = new FormData()
+    formDataObj.append('file', file)
     
-    const res = await uploadTeachingPlan(formData)
-    if (res.data) {
+    ElMessage.info('正在解析教案文件...')
+    const res = await uploadTeachingPlan(formDataObj)
+    console.log('上传教案响应:', res)
+    
+    if (res.code === 200 && res.data) {
       // 自动填充表单
-      Object.assign(formData, res.data)
+      updateFormWithPlanData(res.data)
       ElMessage.success('教案解析成功')
+    } else {
+      throw new Error(res.msg || '教案解析失败')
     }
   } catch (error) {
-    ElMessage.error('教案解析失败')
+    console.error('教案解析失败:', error)
+    ElMessage.error(error.message || '教案解析失败')
   }
+}
+
+// 根据教案数据更新表单
+const updateFormWithPlanData = (data) => {
+  console.log('更新表单数据:', data)
+  
+  // 根据后端字段名进行适配
+  if (data.planName) formData.className = data.planName
+  if (data.sportType) formData.classType = data.sportType
+  if (data.planPurpose) formData.classDesc = data.planPurpose
+  if (data.planProcess) formData.planInfo = data.planProcess
+  
+  // 可能的备选字段名
+  if (!formData.className && data.className) formData.className = data.className
+  if (!formData.classType && data.classType) formData.classType = data.classType
+  if (!formData.classDesc && (data.classPurpose || data.teachingGoals)) {
+    formData.classDesc = data.classPurpose || data.teachingGoals
+  }
+  if (!formData.planInfo && (data.classProcess || data.teachingProcess)) {
+    formData.planInfo = data.classProcess || data.teachingProcess
+  }
+}
+
+// 应用教案到表单
+const applyPlanToForm = async () => {
+  if (!planId.value) return
+  
+  try {
+    ElMessage.info('正在应用教案...')
+    const res = await applyPlanToClass(planId.value)
+    console.log('应用教案响应:', res)
+    
+    if (res.code === 200 && res.data) {
+      updateFormWithPlanData(res.data)
+      ElMessage.success('已应用教案内容')
+    } else {
+      throw new Error(res.msg || '应用教案失败')
+    }
+  } catch (error) {
+    console.error('应用教案失败:', error)
+    ElMessage.error(error.message || '应用教案失败')
+  }
+}
+
+// 拖拽上传相关
+const handleDrop = (e) => {
+  e.preventDefault()
+  isDragging.value = false
+  const file = e.dataTransfer.files[0]
+  if (file) {
+    uploadedFileName.value = file.name
+    uploadedFile.value = file
+    handleFileUpload(file)
+  }
+}
+
+const handleDragOver = (e) => {
+  e.preventDefault()
 }
 
 // 提交表单
@@ -298,14 +423,57 @@ const handleSubmit = async () => {
     await formRef.value.validate()
     submitting.value = true
     
-    const res = await createClassroom(formData)
-    ElMessage.success('创建成功')
+    // 确保提交的数据中没有classId字段
+    const submitData = { 
+      className: formData.className,
+      classType: formData.classType,
+      studentCount: Number(formData.studentCount),
+      duration: Number(formData.duration),
+      genderRatio: Number(formData.genderRatio),
+      errorRate: Number(formData.errorRate),
+      responseTime: Number(formData.responseTime),
+      classDesc: formData.classDesc,   // 教学目标
+      planInfo: formData.planInfo,     // 教学过程
+      weather: formData.weather
+    };
     
-    // 跳转到课堂详情页
-    router.push({
-      path: `/classroom/detail/${res.data.id}`
-    })
+    console.log('提交表单数据:', submitData)
+    const res = await addClassroom(submitData)
+    console.log('创建课堂响应:', res)
+    
+    if (res.code === 200) {
+      ElMessage.success('创建成功')
+      
+      // 处理返回的id格式，从多个可能的位置获取ID
+      let classId = null
+      
+      // 检查各种可能的返回格式
+      if (typeof res.data === 'number' || typeof res.data === 'string') {
+        // 直接返回ID作为data
+        classId = res.data
+      } else if (res.data && typeof res.data === 'object') {
+        // 返回对象中包含classId
+        classId = res.data.classId
+      } else if (res.classId) {
+        // 直接在res对象上
+        classId = res.classId
+      }
+      
+      console.log('提取的课堂ID:', classId)
+      
+      if (classId) {
+        // 跳转到课堂详情页
+        console.log('跳转到详情页:', `/classroom/detail/${classId}`)
+        router.push(`/classroom/detail/${classId}`)
+      } else {
+        console.log('未能获取课堂ID，跳转到列表页')
+        router.push('/classroom/list')
+      }
+    } else {
+      throw new Error(res.msg || '创建失败')
+    }
   } catch (error) {
+    console.error('创建失败:', error)
     ElMessage.error(error.message || '创建失败')
   } finally {
     submitting.value = false
@@ -317,22 +485,14 @@ const handleCancel = () => {
   router.back()
 }
 
-// 拖拽上传相关
-const handleDrop = (e) => {
-  e.preventDefault()
-  const file = e.dataTransfer.files[0]
-  if (file) {
-    handleFileUpload(file)
-  }
-}
-
-const handleDragOver = (e) => {
-  e.preventDefault()
-}
-
 // 初始化
 onMounted(() => {
   fetchCourseTypes()
+  
+  // 如果有planId参数，自动应用教案
+  if (planId.value) {
+    applyPlanToForm()
+  }
 })
 </script>
 
@@ -480,9 +640,15 @@ onMounted(() => {
           padding: 40px;
           text-align: center;
           cursor: pointer;
+          transition: all 0.3s;
 
           &:hover {
             border-color: #409eff;
+          }
+
+          &.dragging {
+            border-color: #409eff;
+            background-color: #ecf5ff;
           }
 
           .el-icon {
@@ -496,6 +662,31 @@ onMounted(() => {
             font-size: 14px;
           }
         }
+
+        .upload-tip {
+          margin-top: 10px;
+          padding: 8px 12px;
+          background: #f0f9eb;
+          border-radius: 4px;
+          color: #67c23a;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          font-size: 14px;
+
+          span {
+            flex: 1;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+          }
+
+          .delete-icon {
+            cursor: pointer;
+            color: #f56c6c;
+            font-size: 16px;
+          }
+        }
       }
     }
   }
@@ -504,13 +695,6 @@ onMounted(() => {
     display: flex;
     justify-content: center;
     gap: 20px;
-  }
-
-  .upload-area {
-    &.dragging {
-      border-color: #409eff;
-      background-color: #ecf5ff;
-    }
   }
 
   .el-select {

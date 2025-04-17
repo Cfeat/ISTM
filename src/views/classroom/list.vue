@@ -37,20 +37,20 @@
     <!-- 课堂列表 -->
     <el-card class="list-content">
       <el-table :data="classroomList" v-loading="loading" border>
-        <el-table-column prop="courseName" label="课程名称" min-width="150" />
+        <el-table-column prop="name" label="课程名称" min-width="150" />
         <el-table-column label="课程类型" width="120">
           <template #default="{ row }">
-            {{ getCourseTypeLabel(row.courseType) }}
+            {{ getCourseTypeLabel(row.type) }}
           </template>
         </el-table-column>
         <el-table-column prop="studentCount" label="学生数量" width="100">
           <template #default="{ row }">
-            {{ row.studentCount }}人
+            {{ row.studentCount || 0 }}人
           </template>
         </el-table-column>
         <el-table-column prop="duration" label="教学时长" width="100">
           <template #default="{ row }">
-            {{ row.duration }}分钟
+            {{ row.duration || 45 }}分钟
           </template>
         </el-table-column>
         <el-table-column prop="createTime" label="创建时间" width="180" />
@@ -101,11 +101,14 @@ const searchForm = reactive({
 })
 
 const courseTypeMap = {
-  basketball: '篮球课程',
-  football: '足球课程',
-  volleyball: '排球课程',
-  athletics: '田径课程',
-  gymnastics: '体操课程'
+  '0': '普通课程',
+  '1': '足球课程',
+  '2': '武术课程',
+  '3': '体操课程',
+  '4': '康复课程',
+  '5': '篮球课程',
+  '6': '田径课程',
+  '7': '排球课程'
 }
 
 const getCourseTypeLabel = (type) => {
@@ -124,8 +127,18 @@ const courseTypesOptions = [
 const fetchCourseTypes = async () => {
   try {
     const res = await getCourseTypes()
-    courseTypes.value = res.data
+    console.log('课程类型响应:', res)
+    if (res.code === 200 && res.data) {
+      // 将RuoYi数据字典格式转换为前端需要的格式
+      courseTypes.value = res.data.map(item => ({
+        value: item.dictValue,
+        label: item.dictLabel
+      }))
+    } else {
+      throw new Error(res.msg || '获取数据失败')
+    }
   } catch (error) {
+    console.error('获取课程类型失败:', error)
     ElMessage.error('获取课程类型失败')
   }
 }
@@ -134,15 +147,61 @@ const fetchCourseTypes = async () => {
 const fetchClassroomList = async () => {
   try {
     loading.value = true
-    const res = await listClassroom({
-      page: currentPage.value,
+    console.log('查询参数:', {
+      pageNum: currentPage.value,
       pageSize: pageSize.value,
-      name: searchForm.name,
-      type: searchForm.type
+      className: searchForm.name,
+      classType: searchForm.type
     })
-    classroomList.value = res.data.list
-    total.value = res.data.total
+    const res = await listClassroom({
+      pageNum: currentPage.value,
+      pageSize: pageSize.value,
+      className: searchForm.name,
+      classType: searchForm.type
+    })
+    console.log('课堂列表响应:', res)
+    
+    if (res.code === 200) {
+      // 适配RuoYi分页数据格式
+      if (res.rows) {
+        classroomList.value = res.rows.map(item => ({
+          id: item.classId,
+          name: item.className,
+          type: item.classType,
+          createTime: item.createTime,
+          teacherName: item.teacherName || '未知',
+          status: item.status || 0,
+          studentCount: item.studentCount || 30,
+          duration: item.duration || 45,
+          description: item.classDesc || '',
+          plan: item.planInfo || ''
+        }))
+        total.value = res.total || 0
+      } else if (res.data && res.data.list) {
+        // 原有格式，保留兼容
+        classroomList.value = res.data.list.map(item => ({
+          id: item.classId || item.id,
+          name: item.className || item.name,
+          type: item.classType || item.type,
+          createTime: item.createTime,
+          teacherName: item.teacherName || '未知',
+          status: item.status || 0,
+          studentCount: item.studentCount || 30,
+          duration: item.duration || 45,
+          description: item.classDesc || item.description || '',
+          plan: item.planInfo || item.plan || ''
+        }))
+        total.value = res.data.total
+      } else {
+        classroomList.value = []
+        total.value = 0
+      }
+      console.log('处理后的课堂数据:', classroomList.value)
+    } else {
+      throw new Error(res.msg || '获取数据失败')
+    }
   } catch (error) {
+    console.error('获取课堂列表失败:', error)
     ElMessage.error('获取课堂列表失败')
   } finally {
     loading.value = false

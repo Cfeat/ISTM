@@ -13,6 +13,7 @@ const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
 export default defineConfig({
+  
   plugins: [vue()],
   resolve: {
     alias: {
@@ -23,10 +24,28 @@ export default defineConfig({
     port: 3000,
     host: true,
     proxy: {
+      // 普通API代理
       '/api': {
         target: 'http://localhost:8080',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api/, '')
+      },
+      // 直接代理验证码和登录接口
+      '/captchaImage': {
+        target: 'http://localhost:8080',
+        changeOrigin: true
+      },
+      '/login': {
+        target: 'http://localhost:8080',
+        changeOrigin: true
+      },
+      '/getInfo': {
+        target: 'http://localhost:8080',
+        changeOrigin: true
+      },
+      '/logout': {
+        target: 'http://localhost:8080',
+        changeOrigin: true
       }
     }
   },

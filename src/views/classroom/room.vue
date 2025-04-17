@@ -88,7 +88,7 @@ import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Timer, Position, Warning, Document, ChatLineRound, CircleClose } from '@element-plus/icons-vue'
-import { getClassroomDetail, sendTeacherCommand, getVirtualStudents } from '@/api/classroom'
+import { getClassroom, sendTeacherCommand, getVirtualStudents } from '@/api/system/classroom'
 import { generateErrorCase, generateStudentResponse } from '@/utils/ai'
 import { Random } from 'mockjs'
 
@@ -126,18 +126,46 @@ const formatTime = (seconds) => {
 // 从教学过程中提取步骤
 const teachingSteps = computed(() => {
   if (!classroom.value.teachingProcess) return []
-  return classroom.value.teachingProcess.split('\n').map(step => step.trim())
+  // 分割教学过程文本为步骤列表
+  return classroom.value.teachingProcess.split('\n')
+    .filter(step => step.trim().length > 0)
+    .map(step => step.trim())
 })
 
 // 获取课堂信息
 const fetchClassroomDetail = async () => {
   try {
-    const res = await getClassroomDetail(route.params.id)
-    classroom.value = res.data
-    // 初始化虚拟学生
-    await initializeVirtualStudents()
+    console.log('获取课堂详情，ID:', route.params.id)
+    const res = await getClassroom(route.params.id)
+    console.log('课堂详情响应:', res)
+    
+    if (res.code === 200 && res.data) {
+      // 适配RuoYi返回的数据格式
+      const data = res.data;
+      classroom.value = {
+        id: data.classId,
+        courseName: data.className,
+        courseType: data.classType,
+        studentCount: data.studentCount || 30,
+        duration: data.duration || 45,
+        teachingGoals: data.classPurpose || data.remark || '',
+        teachingProcess: data.classProcess || '',
+        genderRatio: data.genderRatio || 50,
+        errorRate: data.errorRate || 20,
+        responseTime: data.responseTime || 3
+      }
+      console.log('课堂信息:', classroom.value);
+      // 初始化虚拟学生
+      await initializeVirtualStudents()
+    } else {
+      throw new Error(res.msg || '获取课堂信息失败')
+    }
   } catch (error) {
-    ElMessage.error('获取课堂信息失败')
+    console.error('获取课堂信息失败:', error)
+    ElMessage.error(error.message || '获取课堂信息失败')
+    setTimeout(() => {
+      router.push('/classroom/list')
+    }, 1500)
   }
 }
 

@@ -15,11 +15,11 @@
         <!-- 基本信息 -->
         <div class="section">
           <h3>基本信息</h3>
-          <el-form-item label="课程名称" prop="courseName">
-            <el-input v-model="formData.courseName" placeholder="请输入课程名称" />
+          <el-form-item label="课程名称" prop="className">
+            <el-input v-model="formData.className" placeholder="请输入课程名称" />
           </el-form-item>
-          <el-form-item label="课程类型" prop="courseType">
-            <el-select v-model="formData.courseType" placeholder="请选择课程类型">
+          <el-form-item label="课程类型" prop="classType">
+            <el-select v-model="formData.classType" placeholder="请选择课程类型">
               <el-option 
                 v-for="type in courseTypes" 
                 :key="type.value"
@@ -57,9 +57,9 @@
         <!-- 教学目标 -->
         <div class="section">
           <h3>教学目标</h3>
-          <el-form-item prop="teachingGoals">
+          <el-form-item prop="classDesc">
             <el-input 
-              v-model="formData.teachingGoals"
+              v-model="formData.classDesc"
               type="textarea"
               :rows="4"
               placeholder="请输入教学目标"
@@ -70,9 +70,9 @@
         <!-- 教学过程 -->
         <div class="section">
           <h3>教学过程</h3>
-          <el-form-item prop="teachingProcess">
+          <el-form-item prop="planInfo">
             <el-input
-              v-model="formData.teachingProcess"
+              v-model="formData.planInfo"
               type="textarea"
               :rows="6"
               placeholder="请输入教学过程"
@@ -94,55 +94,82 @@
 import { ref, reactive, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { getClassroomDetail, updateClassroom } from '@/api/classroom'
+import { getClassroom, updateClassroom, getCourseTypes } from '@/api/system/classroom'
 
 const router = useRouter()
 const route = useRoute()
 const formRef = ref(null)
 const loading = ref(false)
-
-// 课程类型选项
-const courseTypes = [
-  { value: 'basketball', label: '篮球课程' },
-  { value: 'football', label: '足球课程' },
-  { value: 'volleyball', label: '排球课程' },
-  { value: 'athletics', label: '田径课程' },
-  { value: 'gymnastics', label: '体操课程' }
-]
+const courseTypes = ref([])
 
 // 表单数据
 const formData = reactive({
-  courseName: '',
-  courseType: '',
+  classId: '',
+  className: '',
+  classType: '',
   studentCount: 30,
   duration: 45,
   genderRatio: 50,
   errorRate: 20,
   responseTime: 3,
-  teachingGoals: '',
-  teachingProcess: ''
+  classDesc: '',
+  planInfo: ''
 })
 
 // 表单验证规则
 const rules = {
-  courseName: [{ required: true, message: '请输入课程名称', trigger: 'blur' }],
-  courseType: [{ required: true, message: '请选择课程类型', trigger: 'change' }],
+  className: [{ required: true, message: '请输入课程名称', trigger: 'blur' }],
+  classType: [{ required: true, message: '请选择课程类型', trigger: 'change' }],
   studentCount: [{ required: true, message: '请输入学生数量', trigger: 'blur' }],
   duration: [{ required: true, message: '请输入教学时长', trigger: 'blur' }],
-  teachingGoals: [{ required: true, message: '请输入教学目标', trigger: 'blur' }],
-  teachingProcess: [{ required: true, message: '请输入教学过程', trigger: 'blur' }]
+  classDesc: [{ required: true, message: '请输入教学目标', trigger: 'blur' }],
+  planInfo: [{ required: true, message: '请输入教学过程', trigger: 'blur' }]
+}
+
+// 获取课程类型列表
+const fetchCourseTypes = async () => {
+  try {
+    const res = await getCourseTypes()
+    console.log('课程类型响应:', res)
+    if (res.code === 200 && res.data) {
+      // 将RuoYi数据字典格式转换为前端需要的格式
+      courseTypes.value = res.data.map(item => ({
+        value: item.dictValue,
+        label: item.dictLabel
+      }))
+    } else {
+      throw new Error(res.msg || '获取数据失败')
+    }
+  } catch (error) {
+    console.error('获取课程类型失败:', error)
+    ElMessage.error('获取课程类型失败')
+  }
 }
 
 // 获取课堂详情
 const fetchDetail = async () => {
   try {
     loading.value = true
-    const res = await getClassroomDetail(route.params.id)
+    const res = await getClassroom(route.params.id)
+    console.log('课堂详情响应:', res)
+    
     if (res.code === 200 && res.data) {
-      // 将获取到的数据填充到表单中
-      Object.assign(formData, res.data)
+      // 适配RuoYi后端数据格式
+      const data = res.data;
+      formData.classId = data.classId || route.params.id;
+      formData.className = data.className || '';
+      formData.classType = data.classType || '';
+      formData.studentCount = data.studentCount || 30;
+      formData.duration = data.duration || 45;
+      // 从正确的后端字段读取数据
+      formData.classDesc = data.classPurpose || data.remark || '';  // 教学目标
+      formData.planInfo = data.classProcess || '';                  // 教学过程
+      formData.genderRatio = data.genderRatio || 50;
+      formData.errorRate = data.errorRate || 20;
+      formData.responseTime = data.responseTime || 3;
+      console.log('编辑表单数据:', formData);
     } else {
-      throw new Error(res.message || '获取课堂详情失败')
+      throw new Error(res.msg || '获取课堂详情失败')
     }
   } catch (error) {
     console.error('获取详情失败:', error)
@@ -162,24 +189,27 @@ const handleSubmit = async () => {
     loading.value = true
     
     const submitData = {
-      id: route.params.id,
-      courseName: formData.courseName,
-      courseType: formData.courseType,
+      classId: formData.classId || route.params.id,
+      className: formData.className,
+      classType: formData.classType,
       studentCount: Number(formData.studentCount),
       duration: Number(formData.duration),
       genderRatio: Number(formData.genderRatio),
       errorRate: Number(formData.errorRate),
       responseTime: Number(formData.responseTime),
-      teachingGoals: formData.teachingGoals,
-      teachingProcess: formData.teachingProcess
+      classDesc: formData.classDesc,   // 教学目标
+      planInfo: formData.planInfo      // 教学过程
     }
 
-    const res = await updateClassroom(route.params.id, submitData)
+    console.log('提交数据:', submitData);
+    const res = await updateClassroom(submitData)
+    console.log('更新响应:', res);
+    
     if (res.code === 200) {
       ElMessage.success('保存成功')
       router.push('/classroom/list')
     } else {
-      throw new Error(res.message || '保存失败')
+      throw new Error(res.msg || '保存失败')
     }
   } catch (error) {
     console.error('保存失败:', error)
@@ -195,6 +225,7 @@ const goBack = () => {
 }
 
 onMounted(() => {
+  fetchCourseTypes()
   if (route.params.id) {
     fetchDetail()
   }

@@ -4,26 +4,27 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.ruoyi.system.mapper.ClassPlanMapper">
     
-    <resultMap type="ClassPlan" id="ClassPlanResult">
-        <result property="planId"    column="plan_id"    />
-        <result property="title"    column="title"    />
-        <result property="planType"    column="plan_type"    />
-        <result property="grade"    column="grade"    />
-        <result property="avatar"    column="avatar"    />
-        <result property="content"    column="content"    />
-        <result property="peopleCount"    column="people_count"    />
-        <result property="note1"    column="note1"    />
-        <result property="note2"    column="note2"    />
-        <result property="note3"    column="note3"    />
-        <result property="createBy"    column="create_by"    />
-        <result property="createTime"    column="create_time"    />
-        <result property="updateBy"    column="update_by"    />
-        <result property="updateTime"    column="update_time"    />
-        <result property="remark"    column="remark"    />
+    <resultMap id="ClassPlanResult" type="ClassPlan">
+    <id property="planId" column="plan_id"/>
+    <result property="title" column="title"/>
+    <result property="planType" column="plan_type"/>
+    <result property="content" column="content"/>
+    <result property="views" column="views"/>
+    <result property="downloads" column="downloads"/>
+    <result property="rating" column="rating"/>
+    <result property="rateCount" column="rate_count"/>
+    <result property="note1" column="note1"/>
+    <result property="note2" column="note2"/>
+    <result property="note3" column="note3"/>
+    <result property="avatar" column="avatar"/>
+    <!-- 其他字段映射... -->
     </resultMap>
 
     <sql id="selectClassPlanVo">
-        select plan_id, title, plan_type, grade, avatar, content, people_count, note1, note2, note3, create_by, create_time, update_by, update_time, remark from class_plan
+    select plan_id, title, plan_type, content, views, downloads, 
+           rating, rate_count, note1, note2, note3, avatar,
+           create_by, create_time, update_by, update_time, remark
+    from class_plan
     </sql>
 
     <select id="selectClassPlanList" parameterType="ClassPlan" resultMap="ClassPlanResult">

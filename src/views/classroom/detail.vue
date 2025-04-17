@@ -10,8 +10,8 @@
       <div class="section">
         <h3>基本信息</h3>
         <el-descriptions :column="2" border>
-          <el-descriptions-item label="课程名称">{{ detail.courseName }}</el-descriptions-item>
-          <el-descriptions-item label="课程类型">{{ getCourseTypeLabel(detail.courseType) }}</el-descriptions-item>
+          <el-descriptions-item label="课程名称">{{ detail.name }}</el-descriptions-item>
+          <el-descriptions-item label="课程类型">{{ getCourseTypeLabel(detail.type) }}</el-descriptions-item>
           <el-descriptions-item label="学生数量">{{ detail.studentCount }}人</el-descriptions-item>
           <el-descriptions-item label="教学时长">{{ detail.duration }}分钟</el-descriptions-item>
         </el-descriptions>
@@ -30,13 +30,13 @@
       <!-- 教学目标 -->
       <div class="section">
         <h3>教学目标</h3>
-        <div class="content-box">{{ detail.teachingGoals }}</div>
+        <div class="content-box">{{ detail.description || '暂无教学目标' }}</div>
       </div>
 
       <!-- 教学过程 -->
       <div class="section">
         <h3>教学过程</h3>
-        <div class="content-box">{{ detail.teachingProcess }}</div>
+        <div class="content-box">{{ detail.plan || '暂无教学过程' }}</div>
       </div>
 
       <!-- 操作按钮 -->
@@ -55,7 +55,7 @@
 import { ref, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { getClassroomDetail, deleteClassroom, startClassroom } from '@/api/classroom'
+import { getClassroom, delClassroom, startClassroom } from '@/api/system/classroom'
 
 const router = useRouter()
 const route = useRoute()
@@ -63,11 +63,14 @@ const loading = ref(false)
 const detail = ref({})
 
 const courseTypeMap = {
-  basketball: '篮球课程',
-  football: '足球课程',
-  volleyball: '排球课程',
-  athletics: '田径课程',
-  gymnastics: '体操课程'
+  '0': '普通课程',
+  '1': '足球课程',
+  '2': '武术课程',
+  '3': '体操课程',
+  '4': '康复课程',
+  '5': '篮球课程',
+  '6': '田径课程',
+  '7': '排球课程'
 }
 
 const getCourseTypeLabel = (type) => {
@@ -78,10 +81,37 @@ const getCourseTypeLabel = (type) => {
 const fetchDetail = async () => {
   try {
     loading.value = true
-    const res = await getClassroomDetail(route.params.id)
-    detail.value = res.data
+    console.log('获取课堂详情，ID:', route.params.id)
+    const res = await getClassroom(route.params.id)
+    console.log('课堂详情响应:', res)
+    
+    if (res.code === 200 && res.data) {
+      // 适配RuoYi返回的数据格式
+      const data = res.data;
+      detail.value = {
+        id: data.classId,
+        name: data.className,
+        type: data.classType,
+        // 从后端正确的字段读取数据，并提供多重备选
+        description: data.classPurpose || data.remark || '',
+        plan: data.classProcess || '',
+        createTime: data.createTime,
+        teacherName: data.teacherName || '未设置',
+        studentCount: data.studentCount || 0,
+        status: data.status || 0,
+        duration: data.duration || 45,
+        genderRatio: data.genderRatio || 50,
+        errorRate: data.errorRate || 20,
+        responseTime: data.responseTime || 3
+      }
+      console.log('处理后的详情数据:', detail.value)
+    } else {
+      throw new Error(res.msg || '获取数据失败')
+    }
   } catch (error) {
-    ElMessage.error('获取课堂详情失败')
+    console.error('获取课堂详情失败:', error)
+    ElMessage.error(error.message || '获取课堂详情失败')
+    router.push('/classroom/list')
   } finally {
     loading.value = false
   }
@@ -120,7 +150,7 @@ const deleteClass = async () => {
       cancelButtonText: '取消',
       type: 'warning'
     })
-    await deleteClassroom(route.params.id)
+    await delClassroom(route.params.id)
     ElMessage.success('删除成功')
     router.push('/classroom/list')
   } catch (error) {

@@ -86,7 +86,7 @@
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
 import { View, Star, Download, ArrowDown } from '@element-plus/icons-vue'
-import { getMaterialsList, downloadMaterial } from '@/api/materials'
+import { getMaterialsList, downloadMaterial, recordPlanDownload } from '@/api/materials'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 
@@ -106,16 +106,29 @@ const router = useRouter()
 const fetchMaterialsList = async () => {
   try {
     const params = {
-      page: currentPage.value,
+      pageNum: currentPage.value,
       pageSize: pageSize.value,
-      sport: filter.sport
+      planType: filter.sport !== 'all' ? filter.sport : undefined
     }
     const res = await getMaterialsList(params)
+    console.log('教案列表响应:', res)
     if (res.code === 200) {
-      materialsList.value = res.data.list
-      total.value = res.data.total
+      // 适配后端返回的数据格式
+      if (res.rows) {
+        materialsList.value = res.rows.map(item => formatPlanItem(item))
+        total.value = res.total || 0
+      } else if (res.data && res.data.list) {
+        materialsList.value = res.data.list.map(item => formatPlanItem(item))
+        total.value = res.data.total || 0
+      } else if (res.data) {
+        materialsList.value = Array.isArray(res.data) ? res.data.map(item => formatPlanItem(item)) : []
+        total.value = res.data.length || 0
+      } else {
+        materialsList.value = []
+        total.value = 0
+      }
     } else {
-      throw new Error(res.message || '获取教案列表失败')
+      throw new Error(res.msg || '获取教案列表失败')
     }
   } catch (error) {
     console.error('获取教案列表失败:', error)
@@ -123,9 +136,43 @@ const fetchMaterialsList = async () => {
   }
 }
 
+// 格式化教案数据
+const formatPlanItem = (item) => {
+  const sportType = item.planType || item.sport || 'default';
+  
+  let defaultCover = '/src/assets/sports/default.jpg';
+  if (sportType === '篮球') {
+    defaultCover = '/src/assets/sports/basketball.jpg';
+  } else if (sportType === '足球') {
+    defaultCover = '/src/assets/sports/football.jpg';
+  } else if (sportType === '排球') {
+    defaultCover = '/src/assets/sports/volleyball.jpg';
+  } else if (sportType === '田径') {
+    defaultCover = '/src/assets/sports/track.jpg';
+  } else if (sportType === '体操') {
+    defaultCover = '/src/assets/sports/gymnastics.jpg';
+  }
+  
+  return {
+    id: item.planId || item.id,
+    title: item.title || '',
+    description: item.content || '暂无描述',
+    sport: item.planType || 'default',
+    cover: item.avatar || defaultCover, 
+    views: item.views || 0,
+    rating: item.rating || '0.0',
+    rateCount: item.rateCount || 0,
+    downloads: item.downloads || 0,
+    // 保存原始数据以备其他用途
+    rawData: item
+  }
+}
+
 // 查看教案详情
 const viewMaterial = (material) => {
-  router.push(`/materials/detail/${material.id}`)
+  const planId = material.id || material.planId;
+  console.log('查看教案ID:', planId);
+  router.push(`/materials/detail/${planId}`)
 }
 
 // 下载教案
@@ -134,7 +181,17 @@ const handleDownload = async (material, fileType) => {
     const res = await downloadMaterial(material.id, fileType)
     
     // 创建 Blob 对象
-    const blob = new Blob([new Uint8Array(res.data)], { type: res.type || 'text/plain' })
+    // 注意：后端可能直接返回blob数据，而不是包装在data属性中
+    let blobData = res;
+    if (res.data) {
+      blobData = new Uint8Array(res.data)
+    }
+    
+    const blob = new Blob([blobData], { 
+      type: fileType === 'pdf' ? 'application/pdf' : 
+            fileType === 'docx' ? 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' : 
+            'text/plain' 
+    })
     
     // 创建下载链接
     const url = window.URL.createObjectURL(blob)
@@ -149,6 +206,24 @@ const handleDownload = async (material, fileType) => {
     // 清理
     document.body.removeChild(link)
     window.URL.revokeObjectURL(url)
+    
+    // 记录下载次数
+    try {
+      const recordRes = await recordPlanDownload(material.id, fileType)
+      console.log('记录下载响应:', recordRes)
+      
+      // 如果后端返回了更新后的下载数，则使用后端返回的
+      if (recordRes.code === 200 && recordRes.data && recordRes.data.downloads) {
+        material.downloads = recordRes.data.downloads
+      } else {
+        // 否则本地+1
+        material.downloads++
+      }
+    } catch (error) {
+      console.error('记录下载失败:', error)
+      // 即使记录失败，也增加本地计数
+      material.downloads++
+    }
     
     ElMessage.success('下载成功')
   } catch (error) {

@@ -112,7 +112,7 @@ const loginRules = {
   password: [{ required: true, trigger: 'blur', message: '请输入密码' }],
   code: [
     { required: true, trigger: 'blur', message: '请输入验证码' },
-    { min: 4, max: 4, message: '验证码长度必须为4位', trigger: 'blur' }
+    // { min: 4, max: 4, message: '验证码长度必须为4位', trigger: 'blur' }
   ]
 }
 
@@ -125,16 +125,26 @@ const passwordVisible = ref(false)
 const getCode = async () => {
   try {
     const res = await getCodeImg()
+    console.log('验证码响应:', res)
+    // RuoYi后端返回格式适配
     if (res.code === 200) {
-      // 直接使用返回的base64图片
-      codeUrl.value = res.img
-      loginForm.uuid = res.uuid
+      // 确保img字段存在
+      if (res.img) {
+        codeUrl.value = 'data:image/gif;base64,' + res.img
+        loginForm.uuid = res.uuid
+      } else if (res.captchaImg) {
+        codeUrl.value = 'data:image/gif;base64,' + res.captchaImg
+        loginForm.uuid = res.uuid
+      } else {
+        console.error('验证码图片数据格式不匹配:', res)
+        ElMessage.error('验证码图片数据格式不匹配')
+      }
     } else {
-      ElMessage.error('获取验证码失败')
+      ElMessage.error(res.msg || '获取验证码失败')
     }
   } catch (error) {
     console.error('获取验证码失败:', error)
-    ElMessage.error('获取验证码失败')
+    ElMessage.error(error.message || '获取验证码失败')
   }
 }
 
@@ -146,10 +156,15 @@ const handleLogin = async () => {
     if (valid) {
       loading.value = true
       try {
+        console.log('正在提交登录请求...', loginForm)
         const res = await userStore.login(loginForm)
+        console.log('登录响应:', res)
         if (res.code === 200) {
-          router.push({ path: '/dashboard' })
-          ElMessage.success('登录成功')
+          // 等待短暂时间，确保token被正确设置
+          setTimeout(() => {
+            router.push({ path: '/dashboard' })
+            ElMessage.success('登录成功')
+          }, 300)
         } else {
           // 登录失败，重新获取验证码
           getCode()
