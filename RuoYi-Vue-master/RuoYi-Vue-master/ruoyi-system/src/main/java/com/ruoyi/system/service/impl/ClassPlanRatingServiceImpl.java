@@ -1,6 +1,7 @@
 package com.ruoyi.system.service.impl;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -43,8 +44,12 @@ public class ClassPlanRatingServiceImpl implements IClassPlanRatingService
     @Override
     public ClassPlanRating selectRatingByUserAndPlan(Long userId, Long planId)
     {
-        // 临时返回null，实际应该调用Mapper查询
-        return null;
+        // 实际调用Mapper查询
+        ClassPlanRating rating = new ClassPlanRating();
+        rating.setUserId(userId);
+        rating.setPlanId(planId);
+        List<ClassPlanRating> ratings = classPlanRatingMapper.selectRatingList(rating);
+        return ratings != null && !ratings.isEmpty() ? ratings.get(0) : null;
     }
 
     /**
@@ -64,6 +69,20 @@ public class ClassPlanRatingServiceImpl implements IClassPlanRatingService
     }
 
     /**
+     * 查询教案所有评分记录
+     * 
+     * @param planId 教案ID
+     * @return 教案评分记录列表
+     */
+    @Override
+    public List<ClassPlanRating> selectRatingsByPlanId(Long planId)
+    {
+        ClassPlanRating rating = new ClassPlanRating();
+        rating.setPlanId(planId);
+        return classPlanRatingMapper.selectRatingList(rating);
+    }
+
+    /**
      * 新增教案评分记录
      * 
      * @param classPlanRating 教案评分记录
@@ -72,8 +91,8 @@ public class ClassPlanRatingServiceImpl implements IClassPlanRatingService
     @Override
     public int insertRating(ClassPlanRating classPlanRating)
     {
-        // 临时返回成功，实际应该调用Mapper插入
-        return 1;
+        // 实际调用Mapper插入
+        return classPlanRatingMapper.insertRating(classPlanRating);
     }
 
     /**
@@ -85,8 +104,8 @@ public class ClassPlanRatingServiceImpl implements IClassPlanRatingService
     @Override
     public int updateRating(ClassPlanRating classPlanRating)
     {
-        // 临时返回成功，实际应该调用Mapper更新
-        return 1;
+        // 实际调用Mapper更新
+        return classPlanRatingMapper.updateRating(classPlanRating);
     }
 
     /**

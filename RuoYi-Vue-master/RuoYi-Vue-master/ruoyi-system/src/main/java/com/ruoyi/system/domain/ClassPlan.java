@@ -23,7 +23,7 @@ public class ClassPlan extends BaseEntity
     private String title;
     
     public String getTitle() {
-        return title;
+        return this.planName;
     }
 
     public void setTitle(String title) {
@@ -245,7 +245,7 @@ public class ClassPlan extends BaseEntity
      */
     public String getTeachingGoals() 
     {
-        return this.note1 != null ? this.note1 : this.planPurpose;
+        return this.planPurpose;
     }
 
     /**
@@ -253,7 +253,7 @@ public class ClassPlan extends BaseEntity
      */
     public String getTeachingProcess() 
     {
-        return this.note2 != null ? this.note2 : this.planProcess;
+        return this.planProcess;
     }
 
     /**

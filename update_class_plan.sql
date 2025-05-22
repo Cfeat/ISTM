@@ -8,10 +8,3 @@ ALTER TABLE `class_plan` CHANGE `plan_process` `note2` text COMMENT '教学过�
 ALTER TABLE `class_plan` CHANGE `cover_img` `avatar` varchar(255) DEFAULT NULL COMMENT '封面图片地址';
 ALTER TABLE `class_plan` ADD COLUMN `note3` varchar(255) DEFAULT NULL COMMENT '备用字段';
 
--- 给ClassPlanController添加需要的接口
--- 由于实际会实现在Java代码中，此处仅作为参考
--- 1. 下载教案接口: /system/plan/download
--- 2. 记录查看次数: /system/plan/view/{planId}
--- 3. 评分接口: /system/plan/rate
--- 4. 记录下载: /system/plan/download/record
--- 5. 应用教案到课堂: /system/plan/apply/{planId} 

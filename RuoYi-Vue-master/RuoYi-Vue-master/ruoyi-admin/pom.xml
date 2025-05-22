@@ -61,6 +61,19 @@
             <artifactId>ruoyi-generator</artifactId>
         </dependency>
 
+        <!-- Word文档处理 -->
+        <dependency>
+            <groupId>org.apache.poi</groupId>
+            <artifactId>poi-ooxml</artifactId>
+        </dependency>
+
+        <!-- PDF文档处理 -->
+        <dependency>
+            <groupId>com.itextpdf</groupId>
+            <artifactId>itextpdf</artifactId>
+            <version>5.5.13.3</version>
+        </dependency>
+
     </dependencies>
 
     <build>

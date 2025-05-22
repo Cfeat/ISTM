@@ -31,9 +31,9 @@
         </div>
         <div class="meta-info">
           <el-tag>{{ detail.planType }}</el-tag>
-          <span><el-icon><View /></el-icon>{{ detail.peopleCount || 0 }}</span>
-          <span><el-icon><Star /></el-icon>{{ detail.rating || '0.0' }} {{ detail.rateCount ? `(${detail.rateCount}人评价)` : '' }}</span>
-          <span><el-icon><Download /></el-icon>{{ detail.downloads || 0 }}</span>
+          <span class="stat-item"><el-icon><View /></el-icon>{{ detail.views || 0 }}</span>
+          <span class="stat-item"><el-icon><Star /></el-icon>{{ detail.rating || '0.0' }} {{ detail.rateCount ? `(${detail.rateCount}人评价)` : '' }}</span>
+          <span class="stat-item"><el-icon><Download /></el-icon>{{ detail.downloads || 0 }}</span>
         </div>
       </div>
 
@@ -42,8 +42,14 @@
         <h3>教案评分</h3>
         <div class="rating-content">
           <div class="current-rating">
-            <span class="score">{{ detail.rating || '暂无评分' }}</span>
-            <span class="count" v-if="detail.rateCount">({{ detail.rateCount }}人评价)</span>
+            <div class="rating-score">{{ detail.rating || '暂无评分' }}</div>
+            <el-rate
+              v-model="detail.rating"
+              disabled
+              show-score
+              text-color="#ff9900"
+            />
+            <div class="rating-count" v-if="detail.rateCount">{{ detail.rateCount }}人评价</div>
           </div>
           <div class="rate-form">
             <span>我的评分：</span>
@@ -51,7 +57,6 @@
               v-model="userRating"
               :colors="['#99A9BF', '#F7BA2A', '#FF9900']"
               :show-text="true"
-              :show-score="true"
               :texts="['很差', '较差', '一般', '不错', '很好']"
               @change="handleRate"
             />
@@ -73,6 +78,48 @@
       <div class="section">
         <h3>教学过程</h3>
         <div class="content-box">{{ detail.note2 || '暂无教学过程' }}</div>
+      </div>
+
+      <!-- 添加评分历史 -->
+      <!-- <div class="section">
+        <h3>评分详情</h3>
+        <div class="rating-stats">
+          <div class="current-rating">
+            <div class="rating-number">{{ detail.rating || '0.0' }}</div>
+            <el-rate v-model="detail.rating" disabled show-score text-color="#ff9900"></el-rate>
+            <div class="rating-text">{{ detail.rateCount || 0 }}人评价</div>
+          </div>
+          
+          <div class="rating-distribution">
+            <div v-for="n in 5" :key="n" class="rating-bar">
+              <span class="star-level">{{ n }}星</span>
+              <el-progress 
+                :percentage="getRatingPercentage(n)" 
+                :stroke-width="14"
+                :color="n > 3 ? '#67c23a' : n > 1 ? '#e6a23c' : '#f56c6c'">
+              </el-progress>
+            </div>
+          </div>
+        </div>
+      </div> -->
+
+      <!-- 添加交互计数器 -->
+      <div class="meta-stats">
+        <div class="stat-item">
+          <el-icon><View /></el-icon>
+          <span class="count">{{ detail.views || 0 }}</span>
+          <span class="label">浏览量</span>
+        </div>
+        <div class="stat-item">
+          <el-icon><Download /></el-icon>
+          <span class="count">{{ detail.downloads || 0 }}</span>
+          <span class="label">下载量</span>
+        </div>
+        <div class="stat-item">
+          <el-icon><Star /></el-icon>
+          <span class="count">{{ detail.rating || '0.0' }}</span>
+          <span class="label">评分</span>
+        </div>
       </div>
     </el-card>
   </div>
@@ -97,6 +144,7 @@ const route = useRoute()
 const loading = ref(false)
 const detail = ref({})
 const userRating = ref(0)
+const ratingStats = ref({})
 
 // 获取教案详情并记录查看次数
 const fetchDetail = async () => {
@@ -152,6 +200,8 @@ const handleRate = async (score) => {
         if (res.data.rateCount !== undefined) {
           detail.value.rateCount = res.data.rateCount
         }
+        // 获取评分分布数据
+        fetchRatingDistribution()
       }
     } else {
       throw new Error(res.msg || '评分失败')
@@ -166,64 +216,76 @@ const handleRate = async (score) => {
   }
 }
 
+// 获取评分分布数据
+const fetchRatingDistribution = async () => {
+  try {
+    // 可以添加新的API方法来获取评分分布数据
+    // const res = await getRatingDistribution(route.params.id)
+    // if (res.code === 200 && res.data) {
+    //   ratingStats.value = res.data
+    // }
+    
+    // 此处仅做模拟数据展示
+    ratingStats.value = {
+      '5': Math.floor(Math.random() * 100),
+      '4': Math.floor(Math.random() * 80),
+      '3': Math.floor(Math.random() * 50),
+      '2': Math.floor(Math.random() * 20),
+      '1': Math.floor(Math.random() * 10)
+    }
+  } catch (error) {
+    console.error('获取评分分布失败:', error)
+  }
+}
+
+// 计算各星级评分百分比
+const getRatingPercentage = (star) => {
+  if (!detail.value.rateCount || detail.value.rateCount === 0) {
+    return 0
+  }
+  
+  const count = ratingStats.value[star] || 0
+  return Math.round((count / detail.value.rateCount) * 100)
+}
+
 // 下载教案
 const handleDownload = async (fileType) => {
   try {
-    loading.value = true
-    const res = await downloadMaterial(route.params.id, fileType)
+    loading.value = true;
     
-    // 创建 Blob 对象
-    // 注意：后端可能直接返回blob数据，而不是包装在data属性中
-    let blobData = res;
-    if (res.data) {
-      blobData = new Uint8Array(res.data)
-    }
+    // 使用完整URL，确保包含协议和主机
+    const baseUrl = import.meta.env.VITE_APP_BASE_API;
+    const url = `${baseUrl}/system/plan/download?planId=${route.params.id}&fileType=${fileType}`;
     
-    const blob = new Blob([blobData], { 
-      type: fileType === 'pdf' ? 'application/pdf' : 
-            fileType === 'docx' ? 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' : 
-            'text/plain' 
-    })
-    
-    // 创建下载链接
-    const url = window.URL.createObjectURL(blob)
-    const link = document.createElement('a')
-    link.href = url
-    link.download = `${detail.value.title}.${fileType}`
-    
-    // 触发下载
-    document.body.appendChild(link)
-    link.click()
-    
-    // 清理
-    document.body.removeChild(link)
-    window.URL.revokeObjectURL(url)
+    // 创建临时链接并触发下载
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `${detail.value.title || '教案'}.${fileType}`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
     
     // 记录下载次数
     try {
-      const recordRes = await recordPlanDownload(route.params.id, fileType)
-      console.log('记录下载响应:', recordRes)
-      
-      // 如果后端返回了更新后的下载数据，则更新本地数据
+      const recordRes = await recordPlanDownload(route.params.id, fileType);
       if (recordRes.code === 200 && recordRes.data) {
         if (recordRes.data.downloads) {
-          detail.value.downloads = recordRes.data.downloads
+          detail.value.downloads = recordRes.data.downloads;
         } else {
-          detail.value.downloads = (detail.value.downloads || 0) + 1
+          detail.value.downloads = (detail.value.downloads || 0) + 1;
         }
       }
     } catch (error) {
-      console.error('记录下载失败:', error)
-      // 即使记录失败，也增加本地计数
-      detail.value.downloads = (detail.value.downloads || 0) + 1
+      console.error('记录下载失败:', error);
+      detail.value.downloads = (detail.value.downloads || 0) + 1;
     }
     
-    ElMessage.success('下载成功')
+    ElMessage.success('下载成功');
   } catch (error) {
-    console.error('下载失败:', error)
-    ElMessage.error('下载失败，请稍后重试')
+    console.error('下载失败:', error);
+    ElMessage.error('下载失败，请稍后重试');
   } finally {
-    loading.value = false
+    loading.value = false;
   }
 }
 
@@ -357,13 +419,13 @@ onMounted(() => {
       justify-content: space-between;
       
       .current-rating {
-        .score {
+        .rating-score {
           font-size: 24px;
           color: #ff9900;
           font-weight: bold;
         }
         
-        .count {
+        .rating-count {
           font-size: 14px;
           color: #999;
           margin-left: 5px;
@@ -379,6 +441,65 @@ onMounted(() => {
           font-size: 14px;
           color: #666;
         }
+      }
+    }
+  }
+
+  .rating-stats {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    
+    .current-rating {
+      .rating-number {
+        font-size: 24px;
+        color: #ff9900;
+        font-weight: bold;
+      }
+      
+      .rating-text {
+        font-size: 14px;
+        color: #999;
+        margin-left: 5px;
+      }
+    }
+    
+    .rating-distribution {
+      display: flex;
+      gap: 10px;
+      
+      .rating-bar {
+        .star-level {
+          font-size: 14px;
+          color: #666;
+        }
+        
+        .el-progress {
+          width: 100px;
+        }
+      }
+    }
+  }
+
+  .meta-stats {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    
+    .stat-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      
+      .count {
+        font-size: 24px;
+        color: #333;
+        font-weight: bold;
+      }
+      
+      .label {
+        font-size: 14px;
+        color: #999;
       }
     }
   }

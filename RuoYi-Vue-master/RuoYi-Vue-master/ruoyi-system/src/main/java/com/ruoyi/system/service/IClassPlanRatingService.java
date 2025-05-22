@@ -1,5 +1,6 @@
 package com.ruoyi.system.service;
 
+import java.util.List;
 import java.util.Map;
 
 import com.ruoyi.system.domain.ClassPlanRating;
@@ -35,6 +36,14 @@ public interface IClassPlanRatingService
      * @return 包含averageRating和rateCount的Map
      */
     public Map<String, Object> getAverageRating(Long planId);
+
+    /**
+     * 查询教案所有评分记录
+     * 
+     * @param planId 教案ID
+     * @return 教案评分记录列表
+     */
+    public List<ClassPlanRating> selectRatingsByPlanId(Long planId);
 
     /**
      * 新增教案评分记录

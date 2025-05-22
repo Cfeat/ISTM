@@ -1,6 +1,16 @@
 <template>
   <div class="materials-container">
-    <h2 style="color: #95d475;">精选教案</h2>
+    <div class="page-header">
+      <h2 style="color: #95d475;">精选教案</h2>
+      <div class="action-buttons">
+        <el-button type="primary" @click="$router.push('/materials/upload')">
+          <el-icon><Plus /></el-icon>上传教案
+        </el-button>
+        <!-- <el-button type="info" @click="$router.push('/materials/statistics')">
+          <el-icon><TrendCharts /></el-icon>数据统计
+        </el-button> -->
+      </div>
+    </div>
 
     <!-- 分类筛选 -->
     <el-card class="filter-card">
@@ -44,13 +54,13 @@
           <h3>{{ item.title }}</h3>
           <p>{{ item.description }}</p>
           <div class="material-meta">
-            <span><el-icon><View /></el-icon>{{ item.views }}</span>
-            <span><el-icon><Star /></el-icon>{{ item.rating }}</span>
-            <span><el-icon><Download /></el-icon>{{ item.downloads }}</span>
+            <!-- <span><el-icon><View /></el-icon>{{ item.views }}</span>
+            <span><el-icon><Star /></el-icon>{{ item.rating }} {{ item.rateCount > 0 ? `(${item.rateCount})` : '' }}</span>
+            <span><el-icon><Download /></el-icon>{{ item.downloads }}</span> -->
           </div>
           <div class="material-actions">
             <el-button type="primary" @click="viewMaterial(item)">查看详情</el-button>
-            <el-dropdown @command="(type) => handleDownload(item, type)">
+            <el-dropdown @command="(type) => handleDownload(type, item.id)">
               <el-button>
                 <el-icon><Download /></el-icon>下载
                 <el-icon class="el-icon--right"><ArrowDown /></el-icon>
@@ -85,7 +95,7 @@
 
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
-import { View, Star, Download, ArrowDown } from '@element-plus/icons-vue'
+import { View, Star, Download, ArrowDown, Plus, TrendCharts } from '@element-plus/icons-vue'
 import { getMaterialsList, downloadMaterial, recordPlanDownload } from '@/api/materials'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
@@ -153,17 +163,22 @@ const formatPlanItem = (item) => {
     defaultCover = '/src/assets/sports/gymnastics.jpg';
   }
   
+  // 确保数值字段有合适的默认值和类型转换
+  const views = item.views !== undefined ? Number(item.views) : (item.peopleCount !== undefined ? Number(item.peopleCount) : 0);
+  const downloads = item.downloads !== undefined ? Number(item.downloads) : 0;
+  const rating = item.rating !== undefined ? (typeof item.rating === 'number' ? item.rating.toFixed(1) : item.rating) : '0.0';
+  const rateCount = item.rateCount !== undefined ? Number(item.rateCount) : 0;
+  
   return {
-    id: item.planId || item.id,
-    title: item.title || '',
-    description: item.content || '暂无描述',
+    id: item.planId || item.id || 0,
+    title: item.title || item.planName || '',
+    description: item.content || item.planDesc || '暂无描述',
     sport: item.planType || 'default',
-    cover: item.avatar || defaultCover, 
-    views: item.views || 0,
-    rating: item.rating || '0.0',
-    rateCount: item.rateCount || 0,
-    downloads: item.downloads || 0,
-    // 保存原始数据以备其他用途
+    cover: item.avatar || item.coverImg || defaultCover, 
+    views: views,
+    rating: rating,
+    rateCount: rateCount,
+    downloads: downloads,
     rawData: item
   }
 }
@@ -176,59 +191,40 @@ const viewMaterial = (material) => {
 }
 
 // 下载教案
-const handleDownload = async (material, fileType) => {
+const handleDownload = async (fileType, materialId) => {
   try {
-    const res = await downloadMaterial(material.id, fileType)
+    // 使用完整URL
+    const baseUrl = import.meta.env.VITE_APP_BASE_API;
+    const url = `${baseUrl}/system/plan/download?planId=${materialId}&fileType=${fileType}`;
     
-    // 创建 Blob 对象
-    // 注意：后端可能直接返回blob数据，而不是包装在data属性中
-    let blobData = res;
-    if (res.data) {
-      blobData = new Uint8Array(res.data)
-    }
-    
-    const blob = new Blob([blobData], { 
-      type: fileType === 'pdf' ? 'application/pdf' : 
-            fileType === 'docx' ? 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' : 
-            'text/plain' 
-    })
-    
-    // 创建下载链接
-    const url = window.URL.createObjectURL(blob)
-    const link = document.createElement('a')
-    link.href = url
-    link.download = `${material.title}.${fileType}`
-    
-    // 触发下载
-    document.body.appendChild(link)
-    link.click()
-    
-    // 清理
-    document.body.removeChild(link)
-    window.URL.revokeObjectURL(url)
+    // 创建临时链接并触发下载
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `教案.${fileType}`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
     
     // 记录下载次数
     try {
-      const recordRes = await recordPlanDownload(material.id, fileType)
-      console.log('记录下载响应:', recordRes)
+      const downloadRes = await recordPlanDownload(materialId, fileType);
+      console.log('记录下载结果:', downloadRes);
       
-      // 如果后端返回了更新后的下载数，则使用后端返回的
-      if (recordRes.code === 200 && recordRes.data && recordRes.data.downloads) {
-        material.downloads = recordRes.data.downloads
-      } else {
-        // 否则本地+1
-        material.downloads++
+      // 更新本地数据，增加下载计数
+      if (downloadRes.code === 200 && downloadRes.data) {
+        const updatedMaterial = materialsList.value.find(item => item.id === materialId);
+        if (updatedMaterial) {
+          updatedMaterial.downloads = downloadRes.data.downloads || (updatedMaterial.downloads + 1);
+        }
       }
-    } catch (error) {
-      console.error('记录下载失败:', error)
-      // 即使记录失败，也增加本地计数
-      material.downloads++
+    } catch (err) {
+      console.error('记录下载失败:', err);
     }
     
-    ElMessage.success('下载成功')
+    ElMessage.success('下载成功');
   } catch (error) {
-    console.error('下载失败:', error)
-    ElMessage.error('下载失败，请稍后重试')
+    console.error('下载失败:', error);
+    ElMessage.error('下载失败，请稍后重试');
   }
 }
 
@@ -357,6 +353,18 @@ onMounted(() => {
     display: flex;
     justify-content: center;
     margin-top: 30px;
+  }
+
+  .page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+  }
+
+  .action-buttons {
+    display: flex;
+    gap: 10px;
   }
 }
 </style> 

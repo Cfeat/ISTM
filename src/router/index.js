@@ -111,19 +111,34 @@ export const constantRoutes = [
   {
     path: '/materials',
     component: Layout,
+    redirect: '/materials/index',
+    name: 'Materials',
+    meta: { title: '教案管理', icon: 'book' },
     children: [
       {
-        path: '',
-        name: 'Materials',
+        path: 'index',
         component: () => import('@/views/materials/index.vue'),
-        meta: { title: '精选教案', icon: 'Document' }
+        name: 'MaterialsList',
+        meta: { title: '精选教案', icon: 'list' }
       },
       {
         path: 'detail/:id',
-        name: 'MaterialDetail',
         component: () => import('@/views/materials/detail.vue'),
-        meta: { title: '教案详情' },
+        name: 'MaterialDetail',
+        meta: { title: '教案详情', activeMenu: '/materials/index' },
         hidden: true
+      },
+      {
+        path: 'upload',
+        component: () => import('@/views/materials/upload.vue'),
+        name: 'MaterialUpload',
+        meta: { title: '上传教案', icon: 'upload' }
+      },
+      {
+        path: 'statistics',
+        component: () => import('@/views/materials/statistics.vue'),
+        name: 'MaterialStats',
+        meta: { title: '数据统计', icon: 'chart' }
       }
     ]
   },
